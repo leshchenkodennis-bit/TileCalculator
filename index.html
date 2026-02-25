@@ -1079,8 +1079,7 @@ td:nth-child(2){text-align:center;white-space:nowrap}td:nth-child(3){text-align:
   const gt=mode==="works"?wt:mode==="mats"?mt:wt+mt;
   html+=`<div class="grand">${mode==="works"?"СТОИМОСТЬ РАБОТ":mode==="mats"?"СТОИМОСТЬ МАТЕРИАЛОВ":"ОБЩАЯ СТОИМОСТЬ"}<br><b>${fmt(gt)} грн</b>`;
   if(mode==="all")html+=`<br><span style="font-size:13px;color:#666">работа: ${fmt(wt)} + материалы: ${fmt(mt)}</span>`;
-  html+=`</div><div class="footer"><span>Смета № ${estNum} · ${dateStr}</span><span>Powered by Tiler's Assistant by pro.tiler.od</span></div><script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');</script>
-</body></html>`;
+  html+=`</div><div class="footer"><span>Смета № ${estNum} · ${dateStr}</span><span>Powered by Tiler's Assistant by pro.tiler.od</span></div></body></html>`;
 
   const sfx=mode==="works"?"_raboty":mode==="mats"?"_materialy":"";
   const blob=new Blob([html],{type:"text/html;charset=utf-8"});
