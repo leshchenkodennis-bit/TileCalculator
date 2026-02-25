@@ -7,9 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ПлиткаCalc">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogItCa0LDQu9GM0LrRg9C70Y/RgtC+0YAg0L/Qu9C40YLQvtGH0L3Ri9GFINC60L7QsdC+0YIiLAogICJzaG9ydF9uYW1lIjogItCf0LvQuNGC0LrQsENhbGMiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzBmMGYxYSIsCiAgInRoZW1lX2NvbG9yIjogIiMwZjBmMWEiLAogICJpY29ucyI6IFt7CiAgICAic3JjIjogImRhdGE6aW1hZ2Uvc3ZnK3htbCw8c3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDEwMCAxMDAnPjx0ZXh0IHk9Jy45ZW0nIGZvbnQtc2l6ZT0nOTAnPvCfk+A8L3RleHQ+PC9zdmc+IiwKICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiCiAgfV0KfQ==">
 <title>Калькулятор плиточных работ</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" crossorigin="anonymous">
@@ -234,6 +232,11 @@ h1{font-size:24px;font-weight:800}
 </div></div>
 
 <script>
+// One-time reset to clear corrupted data from previous versions
+if(!localStorage.getItem("tilecalc_v4_clean")){
+  for(var k in localStorage){if(k.indexOf("tilecalc")===0)localStorage.removeItem(k);}
+  localStorage.setItem("tilecalc_v4_clean","1");
+}
 var H=2.7,DA=1.47;
 var TILE_WORK={id:"tile",name:"Облицовка",price:670,unit:"м²"};
 const BASE_WORKS=[
@@ -1087,10 +1090,46 @@ function closeSettings(){
 
 function resetAll(){S=defaultState();saveState();$("iL").value="";$("iW").value="";$("iD").value="0";updGeo();go(1);}
 
-loadState();$("iL").addEventListener("input",updGeo);$("iW").addEventListener("input",updGeo);$("iD").addEventListener("input",updGeo);updGeo();renderHistory();
+// Reset session state on fresh app open (not swipe-resume)
+function resetSessionState(){
+  // Reset work enabled flags to defaults
+  S.works.forEach(function(w){
+    var base=BASE_WORKS.find(function(b){return b.id===w.id;});
+    w.enabled=base?base.enabled:false;
+    // Reset manual qty overrides
+    if(w.manualQty!==undefined)delete w.manualQty;
+  });
+  // Reset material enabled/manualOn to defaults
+  S.materials.forEach(function(m){
+    var base=BASE_MATS.find(function(b){return b.id===m.id;});
+    m.enabled=base?base.enabled:true;
+    m.manualOn=false;
+  });
+  saveState();
+}
 
-// PWA Service Worker
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(){});}
+loadState();
+
+// Session check: if no sessionStorage flag → fresh open → reset work state
+if(!sessionStorage.getItem("tilecalc_session")){
+  sessionStorage.setItem("tilecalc_session","1");
+  resetSessionState();
+  // Clear dimensions
+  $("iL").value="";$("iW").value="";$("iD").value="0";
+}
+
+// Back button: navigate steps instead of closing app
+var curStep=1;
+var _origGo=go;
+go=function(n){curStep=n;history.pushState({step:n},"","");_origGo(n);};
+window.addEventListener("popstate",function(e){
+  if(e.state&&e.state.step){curStep=e.state.step;_origGo(curStep);}
+  else if(curStep>1){curStep--;history.pushState({step:curStep},"","");_origGo(curStep);}
+  else{history.pushState({step:1},"","");}
+});
+history.replaceState({step:1},"","");
+
+$("iL").addEventListener("input",updGeo);$("iW").addEventListener("input",updGeo);$("iD").addEventListener("input",updGeo);updGeo();renderHistory();
 </script>
 </body>
 </html>
