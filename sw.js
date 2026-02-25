@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tilecalc-v5';
+const CACHE_NAME = 'tilecalc-v10';
 const ASSETS = [
   './',
   './index.html',
