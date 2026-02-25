@@ -1,6 +1,6 @@
 {
-  "name": "Калькулятор плиточных работ",
-  "short_name": "ПлиткаCalc",
+  "name": "Tiler Assistant",
+  "short_name": "Tiler Assistant",
   "description": "Расчёт стоимости плиточных работ и материалов",
   "start_url": "./index.html",
   "display": "standalone",
