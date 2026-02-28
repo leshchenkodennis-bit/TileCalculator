@@ -154,7 +154,8 @@ h1{font-size:24px;font-weight:800}
 <div id="matPickTotals" style="margin-top:16px"></div>
 <div style="display:flex;gap:9px;margin-top:18px">
 <button class="bt bt2" style="flex:1" onclick="go(1)">← Назад</button>
-<button class="bt bt1" style="flex:2" onclick="exportMatOnlyPDF()">📄 Скачать PDF</button>
+<button class="bt bt1" style="flex:2" onclick="exportMatOnlyPDF()">📄 Скачать</button>
+<button class="bt bt1" style="flex:1" onclick="shareMatOnly()">📤 Поделиться</button>
 </div>
 </div>
 
@@ -177,6 +178,7 @@ h1{font-size:24px;font-weight:800}
 
 <div style="padding:12px 18px;background:var(--surf);border-radius:11px;font-size:12px;color:var(--dim);margin-bottom:18px;line-height:1.5" id="infoBar"></div>
 <button class="bt bt2" style="margin-bottom:9px;font-size:14px;border-color:var(--accent);color:var(--accent)" onclick="saveToHistory()">💾 Сохранить в историю</button>
+<button class="bt bt1" style="margin-bottom:9px;font-size:14px" onclick="shareTxt()">📤 Поделиться</button>
 <div style="display:flex;gap:9px;margin-top:9px">
 <button class="bt bt2" style="flex:1" onclick="go(2)">← Вернуться</button>
 <button class="bt bt2" style="flex:1" onclick="resetAll()">🔄 Заново</button>
@@ -729,6 +731,42 @@ function renderMatPickTotals(count,grandTotal){
   el.innerHTML=h;
 }
 var _lastMatCount=0,_lastMatTotal=0;
+function shareMatOnly(){
+  var ml=[];
+  S.materials.forEach(function(m){
+    if(!m.manualOn)return;
+    var q=m._manualQty||0;
+    if(q<=0)return;
+    var p=matPrice(m)||m.price||0;
+    var grp=m.matGroup||"consumables";
+    ml.push({name:m.name,qty:q,unit:m.unit,price:p,sum:Math.round(q*p),pt:m.productTitle||"",grp:grp});
+  });
+  if(!ml.length){alert("Не выбрано ни одного материала");return;}
+  var mt=ml.reduce(function(a,x){return a+x.sum;},0);
+  var delivery=getDeliverySum();
+  var masterName=S._masterName||"";
+  var masterPhone=S._masterPhone||"";
+  var txt="📦 СМЕТА МАТЕРИАЛОВ\n";
+  if(masterName)txt+=masterName+"\n";
+  if(masterPhone)txt+=masterPhone+"\n";
+  txt+="Дата: "+new Date().toLocaleDateString("uk-UA")+"\n";
+  txt+="─".repeat(30)+"\n";
+  ml.forEach(function(x){
+    txt+=x.name+(x.pt?" ("+x.pt+")":"")+"\n";
+    txt+="  "+x.qty+" "+x.unit+" × "+fmt(x.price)+" = "+fmt(x.sum)+" грн\n";
+  });
+  if(delivery>0){
+    txt+="Доставка и разгрузка: "+fmt(delivery)+" грн\n";
+    mt+=delivery;
+  }
+  txt+="─".repeat(30)+"\n";
+  txt+="ИТОГО: "+fmt(mt)+" грн\n";
+  if(navigator.share){
+    navigator.share({title:"Смета материалов",text:txt}).catch(function(){});
+  }else if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(function(){alert("Скопировано в буфер обмена!");}).catch(function(){fallbackCopy(txt);});
+  }else{fallbackCopy(txt);}
+}
 function resetMatPick(){
   S.materials.forEach(function(m){m.manualOn=false;m._manualQty=0;});
   saveState();renderMatPick();
@@ -737,6 +775,12 @@ function toggleMatPick(i){
   var m=S.materials[i];
   m.manualOn=!m.manualOn;
   saveState();renderMatPick();
+  if(m.manualOn){
+    setTimeout(function(){
+      var inp=document.querySelector('#matPickCards input[oninput*="materials['+i+']"]');
+      if(inp){inp.focus();inp.select();}
+    },50);
+  }
 }
 function goMatResult(){
   S._mode="matOnly";saveState();
