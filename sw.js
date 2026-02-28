@@ -1,4 +1,4 @@
-const CACHE = 'tilecalc-v40';
+const CACHE = 'tilecalc-v41';
 const ASSETS = ['./', 'index.html', 'icon-192.png', 'icon-512.png', 'manifest.json'];
 
 self.addEventListener('install', e => {
