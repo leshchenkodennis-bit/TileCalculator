@@ -750,9 +750,25 @@ function shareMatOnly(){
   var html=buildMatOnlyHTML(ml,mt,delivery,estNum);
   var blob=new Blob([html],{type:"text/html;charset=utf-8"});
   var file=new File([blob],"smeta-materials-"+estNum+".html",{type:"text/html"});
-  if(navigator.canShare&&navigator.canShare({files:[file]})){
-    navigator.share({title:"Смета материалов — "+fmt(mt)+" грн",files:[file]}).catch(function(){});
-  } else {
+  // Try sharing as file, fallback to different types
+  var shared=false;
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({title:"Смета материалов — "+fmt(mt)+" грн",files:[file]}).catch(function(){});
+      shared=true;
+    }
+  }catch(e){}
+  if(!shared){
+    // Try as generic file
+    try{
+      var file2=new File([blob],"smeta-materials-"+estNum+".html",{type:"application/octet-stream"});
+      if(navigator.canShare&&navigator.canShare({files:[file2]})){
+        navigator.share({title:"Смета материалов — "+fmt(mt)+" грн",files:[file2]}).catch(function(){});
+        shared=true;
+      }
+    }catch(e){}
+  }
+  if(!shared){
     // Fallback: share as text
     var txt="📦 СМЕТА МАТЕРИАЛОВ\n";
     var masterName=S._masterName||"";var masterPhone=S._masterPhone||"";
@@ -1620,10 +1636,21 @@ function shareTxt(){
     var htmlStr=buildShareHTML(txt,estNum);
     var blob=new Blob([htmlStr],{type:"text/html;charset=utf-8"});
     var file=new File([blob],"smeta-"+estNum+".html",{type:"text/html"});
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      navigator.share({title:"Смета — расчёт",files:[file]}).catch(function(){});
-      return;
-    }
+    var shared=false;
+    try{
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        navigator.share({title:"Смета — расчёт",files:[file]}).catch(function(){});
+        return;
+      }
+    }catch(e){}
+    // Try generic type
+    try{
+      var file2=new File([blob],"smeta-"+estNum+".html",{type:"application/octet-stream"});
+      if(navigator.canShare&&navigator.canShare({files:[file2]})){
+        navigator.share({title:"Смета — расчёт",files:[file2]}).catch(function(){});
+        return;
+      }
+    }catch(e){}
   }catch(e){}
   // Fallback: share as text
   if(navigator.share){
