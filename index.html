@@ -113,7 +113,7 @@ h1{font-size:24px;font-weight:800}
 <div style="font-size:12px;color:var(--dim);margin-bottom:8px;font-weight:600">Размеры помещения</div>
 <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
 <input class="inp" type="number" id="iL" placeholder="Длина (м)" step="0.01" onfocus="this.select()" oninput="if(this.value.replace(/[^0-9]/g,'').length>=2)$('iW').focus()">
-<input class="inp" type="number" id="iW" placeholder="Ширина (м)" step="0.01" onfocus="this.select()" oninput="if(this.value.replace(/[^0-9]/g,'').length>=2)this.blur()">
+<input class="inp" type="number" id="iW" placeholder="Ширина (м)" step="0.01" onfocus="this.select()" oninput="if(this.value&&$('iL').value)this.blur()">
 <input class="inp" type="number" id="iD" placeholder="Доп. вычитание (м²)" step="0.01" value="0">
 </div>
 <div style="margin-bottom:18px">
@@ -1942,26 +1942,29 @@ function resetSessionState(){
 
 loadState();
 
-// v16: sync cond and fixedQty from BASE_MATS to existing state
-if(!localStorage.getItem("tilecalc_v16_cond")){
-  try{
-    if(S&&S.materials){
-      S.materials.forEach(function(m){
-        var base=BASE_MATS.find(function(b){return b.id===m.id;});
-        if(base){
-          if(base.cond)m.cond=base.cond;
-          if(base.fixedQty)m.fixedQty=base.fixedQty;
-        }
-      });
-      BASE_MATS.forEach(function(b){
-        var exists=S.materials.find(function(m){return m.id===b.id;});
-        if(!exists)S.materials.push(JSON.parse(JSON.stringify(b)));
-      });
-      saveState();
-    }
-  }catch(e){}
-  localStorage.setItem("tilecalc_v16_cond","1");
-}
+// Always sync cond/fixedQty from BASE_MATS to state (ensures new fields propagate)
+try{
+  if(S&&S.materials){
+    var _matChanged=false;
+    S.materials.forEach(function(m){
+      var base=BASE_MATS.find(function(b){return b.id===m.id;});
+      if(base){
+        if(base.cond&&m.cond!==base.cond){m.cond=base.cond;_matChanged=true;}
+        if(base.fixedQty&&m.fixedQty!==base.fixedQty){m.fixedQty=base.fixedQty;_matChanged=true;}
+      }
+    });
+    // Add new materials from BASE_MATS that don't exist in state
+    BASE_MATS.forEach(function(b){
+      var exists=S.materials.find(function(m){return m.id===b.id;});
+      if(!exists){S.materials.push(JSON.parse(JSON.stringify(b)));_matChanged=true;}
+    });
+    if(_matChanged)saveState();
+  }
+}catch(e){}
+
+// Always reset delivery on page load
+S._deliveryOn=false;
+saveState();
 // Restore profile preserved during migration
 try{
   var _prof=JSON.parse(localStorage.getItem("tilecalc_profile"));
