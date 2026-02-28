@@ -126,7 +126,8 @@ h1{font-size:24px;font-weight:800}
 </div>
 </div>
 <div class="geo hide" id="geoBox"><div style="font-size:12px;color:var(--dim);margin-bottom:3px">Рабочая площадь</div><div style="font-size:30px;font-weight:800;color:var(--accent)" id="geoA"></div><div style="font-size:14px;color:var(--accent);margin-top:4px" id="geoCalc"></div><div style="font-size:13px;margin-top:6px" id="geoFmt"></div><div style="font-size:11px;color:var(--dim);margin-top:3px" id="geoD"></div></div>
-<button class="bt bt1" onclick="go(2)">Далее →</button>
+<button class="bt bt1" onclick="S._mode='full';saveState();go(2)">Далее →</button>
+<button class="bt bt2" style="margin-top:9px;font-size:14px;border-color:var(--ok);color:var(--ok)" onclick="S._mode='matOnly';saveState();goMatOnly()">📦 Смета на материалы</button>
 <button class="bt bt2" style="margin-top:9px;font-size:14px" onclick="openSettings()">⚙️ Персонализация мастера</button>
 <div id="historyList" style="margin-top:20px"></div>
 </div>
@@ -140,6 +141,16 @@ h1{font-size:24px;font-weight:800}
 <div style="display:flex;gap:9px;margin-top:18px">
 <button class="bt bt2" style="flex:1" onclick="go(1)">← Назад</button>
 <button class="bt bt1" style="flex:2" onclick="go(3)">Рассчитать →</button>
+</div>
+</div>
+
+<!-- STEP 5: Material-only picker -->
+<div class="scr" id="s5">
+<div style="text-align:center;margin-bottom:24px"><h1>📦 Смета на материалы</h1><p style="color:var(--dim);margin-top:5px;font-size:13px">Выберите материалы из списка</p></div>
+<div id="matPickCards"></div>
+<div style="display:flex;gap:9px;margin-top:18px">
+<button class="bt bt2" style="flex:1" onclick="go(1)">← Назад</button>
+<button class="bt bt1" style="flex:2" onclick="exportMatOnlyPDF()">📄 Скачать PDF</button>
 </div>
 </div>
 
@@ -589,6 +600,128 @@ function resetWorksGroup(flagName){
 }
 function toggleW(i){const w=S.works[i];if(w.group&&!w.enabled)S.works.forEach(x=>{if(x.group===w.group)x.enabled=false;});w.enabled=!w.enabled;saveState();renderWC();renderMC();}
 
+// ═══ MATERIAL-ONLY MODE ═══
+function goMatOnly(){
+  document.querySelectorAll(".scr").forEach(function(s){s.classList.remove("on")});
+  $("s5").classList.add("on");
+  window.scrollTo(0,0);
+  history.pushState({step:5},"","");
+  renderMatPick();
+}
+var showMatPickList=true;
+function renderMatPick(){
+  const matGroups={tile:"Облицовка",grout:"Затирка",consumables:"Расходники",seal:"Герметизация",hydro:"Гидроизоляция"};
+  const groupOrder=["tile","grout","consumables","seal","hydro"];
+  var h="";
+  groupOrder.forEach(function(gk){
+    var items=[];
+    S.materials.forEach(function(m,i){if((m.matGroup||"consumables")===gk)items.push({m:m,i:i});});
+    if(!items.length)return;
+    h+=`<div style="margin-bottom:4px;padding:8px 12px;background:rgba(16,185,129,.08);border-radius:8px;font-weight:700;font-size:13px;color:var(--ok)">${matGroups[gk]||gk}</div>`;
+    items.forEach(function(obj){
+      var m=obj.m,i=obj.i;
+      var on=m.manualOn||false;
+      var q=m._manualQty||1;
+      h+=`<div class="wi${on?" on":""}"><div style="display:flex;align-items:center;gap:10px">`;
+      h+=`<div class="ck" style="cursor:pointer" onclick="toggleMatPick(${i})">${on?"✓":""}</div>`;
+      h+=`<div style="flex:1;min-width:0;cursor:pointer" onclick="toggleMatPick(${i})">`;
+      h+=`<div style="font-weight:600;font-size:14px">${esc(m.name)}</div>`;
+      h+=`<div style="font-size:11px;color:var(--dim);margin-top:2px">${m.productTitle||""} · ${m.price} грн/${esc(m.unit)}</div>`;
+      h+=`</div>`;
+      h+=`<button onclick="editMatInline(${i})" style="background:none;border:none;cursor:pointer;font-size:15px;padding:4px;color:var(--dim)">✏️</button>`;
+      h+=`</div>`;
+      if(on)h+=`<div style="margin-top:6px;display:flex;align-items:center;gap:8px;padding-left:36px"><span style="font-size:11px;color:var(--dim)">Кол-во:</span><input class="inp-s" type="number" step="0.1" value="${q}" style="width:70px;font-size:13px" oninput="S.materials[${i}]._manualQty=parseFloat(this.value)||1;saveState()"><span style="font-size:11px;color:var(--dim)">${esc(m.unit)}</span></div>`;
+      h+=`</div>`;
+    });
+  });
+  h+=`<button class="bt bt2" style="padding:12px;font-size:14px;margin-top:8px" onclick="addMatResult()">+ Добавить свой материал</button>`;
+  $("matPickCards").innerHTML=h;
+}
+function toggleMatPick(i){
+  var m=S.materials[i];
+  m.manualOn=!m.manualOn;
+  if(m.manualOn&&!m._manualQty)m._manualQty=1;
+  saveState();renderMatPick();
+}
+function goMatResult(){
+  S._mode="matOnly";saveState();
+  document.querySelectorAll(".scr").forEach(function(s){s.classList.remove("on")});
+  $("s3").classList.add("on");
+  window.scrollTo(0,0);
+  history.pushState({step:3},"","");
+  renderResult();
+}
+function exportMatOnlyPDF(){
+  var ml=[];
+  S.materials.forEach(function(m){
+    if(!m.manualOn)return;
+    var q=m._manualQty||1;
+    var p=m.price||0;
+    var grp=m.matGroup||"consumables";
+    ml.push({name:m.name,qty:q,unit:m.unit,price:p,sum:Math.round(q*p),pt:m.productTitle||"",grp:grp});
+  });
+  if(!ml.length){alert("Не выбрано ни одного материала");return;}
+  var mt=ml.reduce(function(a,x){return a+x.sum;},0);
+  var estNum=new Date().getFullYear()+"-"+String(Date.now()).slice(-6);
+  var dateStr=new Date().toLocaleDateString("uk-UA");
+  var masterName=S._masterName||"";
+  var masterPhone=S._masterPhone||"";
+  var masterNote=S._masterNote||"";
+  var hasMaster=masterName||masterPhone;
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Смета материалов '+estNum+'</title>';
+  html+='<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;padding:28px;color:#222;font-size:14px;max-width:800px;margin:0 auto}';
+  html+='table{width:100%;border-collapse:collapse;margin-bottom:20px}';
+  html+='th{background:none;color:#888;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;border-bottom:1px solid #e5e7eb;text-transform:uppercase;letter-spacing:0.5px}';
+  html+='th:nth-child(1){width:auto}th:nth-child(2){width:80px;text-align:center}th:nth-child(3){width:80px;text-align:right}th:nth-child(4){width:90px;text-align:right}';
+  html+='td{padding:7px 10px;border-bottom:1px solid #eee;font-size:13px;vertical-align:top}';
+  html+='td:nth-child(2){text-align:center;white-space:nowrap}td:nth-child(3){text-align:right;white-space:nowrap}td:nth-child(4){text-align:right;white-space:nowrap;font-weight:600}';
+  html+='.total-row td{font-weight:700;background:#10b981;color:#fff;border-top:none;font-size:14px;padding:10px}';
+  html+='.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #10b981}';
+  html+='.header-left h1{font-size:22px;margin:0}.header-right{text-align:right;font-size:13px;color:#444}.header-right .name{font-weight:700;font-size:15px;color:#222}';
+  html+='.est-info{display:flex;justify-content:space-between;margin-bottom:18px;font-size:12px;color:#666}';
+  html+='.grand{text-align:center;margin:30px 0;padding:20px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:12px;font-size:16px}';
+  html+='.grand b{font-size:28px;display:block;margin-top:6px}';
+  html+='@media print{body{padding:10px}}</style></head><body>';
+  html+='<div class="header"><div class="header-left"><h1>📦 Смета материалов</h1></div>';
+  if(hasMaster){
+    html+='<div class="header-right">';
+    if(masterName)html+='<div class="name">'+esc(masterName)+'</div>';
+    if(masterPhone)html+='<div>'+esc(masterPhone)+'</div>';
+    if(masterNote)html+='<div style="font-size:11px;color:#888">'+esc(masterNote)+'</div>';
+    html+='</div>';
+  }
+  html+='</div>';
+  html+='<div class="est-info"><span>Смета № '+estNum+'</span><span>Дата: '+dateStr+'</span></div>';
+  var matGroups={tile:"Облицовка",grout:"Затирка",consumables:"Расходники",seal:"Герметизация",hydro:"Гидроизоляция"};
+  var groupOrder=["tile","grout","consumables","seal","hydro"];
+  html+='<table><tr><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr>';
+  groupOrder.forEach(function(gk){
+    var items=ml.filter(function(x){return x.grp===gk;});
+    if(!items.length)return;
+    html+='<tr><td colspan="4" style="background:#f8f8f8;font-weight:800;font-size:13px;color:#333;padding:8px 10px;border-bottom:2px solid #e5e7eb">'+matGroups[gk]+'</td></tr>';
+    items.forEach(function(x){
+      html+='<tr><td style="padding:8px 10px"><div style="font-weight:500;font-size:13px">'+esc(x.name)+'</div>';
+      if(x.pt)html+='<div style="color:#059669;font-size:11px;margin-top:2px">'+esc(x.pt)+'</div>';
+      html+='</td><td>'+x.qty+' '+esc(x.unit)+'</td><td style="white-space:nowrap">'+fmt(x.price)+' грн</td><td style="white-space:nowrap">'+fmt(x.sum)+' грн</td></tr>';
+    });
+  });
+  var ungrouped=ml.filter(function(x){return groupOrder.indexOf(x.grp)===-1;});
+  ungrouped.forEach(function(x){
+    html+='<tr><td style="padding:8px 10px"><div style="font-weight:500;font-size:13px">'+esc(x.name)+'</div>';
+    if(x.pt)html+='<div style="color:#059669;font-size:11px;margin-top:2px">'+esc(x.pt)+'</div>';
+    html+='</td><td>'+x.qty+' '+esc(x.unit)+'</td><td style="white-space:nowrap">'+fmt(x.price)+' грн</td><td style="white-space:nowrap">'+fmt(x.sum)+' грн</td></tr>';
+  });
+  html+='<tr class="total-row"><td colspan="3">Итого материалы</td><td>'+fmt(mt)+' грн</td></tr></table>';
+  html+='<div class="grand">СТОИМОСТЬ МАТЕРИАЛОВ<br><b>'+fmt(mt)+' грн</b></div>';
+  html+='</body></html>';
+  var blob=new Blob([html],{type:"text/html"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url;a.download="smeta-materials-"+estNum+".html";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function updWorkTotals(){
   const a=calcW();
   $("s2a").textContent=a;$("s2p").textContent=TILE_WORK.price;$("s2t").textContent=fmt(Math.round(a*TILE_WORK.price));
@@ -960,6 +1093,7 @@ function renderResult(){
   });
 
   if(!ml.length)mh=`<div style="text-align:center;color:var(--dim);padding:20px">Нет активных материалов</div>`;
+  mh+=`<button class="bt bt2" style="padding:10px;font-size:13px;margin-top:6px;width:100%;border-color:var(--ok);color:var(--ok)" onclick="addMatResult()">+ Добавить материал</button>`;
   $("mRows").innerHTML=mh;$("mhTotal").textContent=fmt(mt)+" грн";
   $("tWork").textContent=fmt(wt)+" грн";$("tMat").textContent=fmt(mt)+" грн";
 
@@ -968,6 +1102,24 @@ function renderResult(){
 
 function removeWorkResult(i){S.works[i].enabled=false;saveState();renderResult();}
 function removeMatResult(i){S.materials[i].enabled=false;S.materials[i].manualOn=false;saveState();renderResult();}
+function addMatResult(){
+  $("ieTitle").textContent="Новый материал";
+  $("ieName").value="";$("ieName").disabled=false;
+  $("iePt").value="";$("iePtWrap").style.display="block";
+  $("iePrice").value="";$("ieQty").value="";
+  $("ieQty").disabled=false;$("ieQtyWrap").style.display="block";
+  $("ieUnit").textContent="шт";
+  $("ieExtra").innerHTML="";
+  $("ieSave").onclick=function(){
+    var name=$("ieName").value.trim();if(!name)return;
+    var m={id:"custom_"+Date.now(),name:name,productTitle:$("iePt").value.trim(),unit:"шт",rate:0,price:parseFloat($("iePrice").value)||0,enabled:true,links:[],fixedQty:1,matGroup:"consumables",manualOn:true};
+    var q=parseFloat($("ieQty").value)||1;
+    m._overrideQty=q;
+    S.materials.push(m);
+    saveState();closeInlineEd();renderResult();
+  };
+  $("ieMo").classList.add("open");
+}
 
 // ═══ INLINE EDIT ON STEP 3 ═══
 function editWorkInline(i){
