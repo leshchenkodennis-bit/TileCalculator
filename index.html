@@ -154,8 +154,8 @@ h1{font-size:24px;font-weight:800}
 <div id="matPickTotals" style="margin-top:16px"></div>
 <div style="display:flex;gap:9px;margin-top:18px">
 <button class="bt bt2" style="flex:1" onclick="go(1)">← Назад</button>
-<button class="bt bt1" style="flex:2" onclick="exportMatOnlyPDF()">📄 Скачать</button>
-<button class="bt bt1" style="flex:1" onclick="shareMatOnly()">📤 Поделиться</button>
+<button class="bt bt1" style="flex:2" onclick="downloadMatSmeta('pdf')">📄 Скачать PDF</button>
+<button class="bt bt1" style="flex:1" onclick="downloadMatSmeta('txt')">📋 Текст</button>
 </div>
 </div>
 
@@ -178,7 +178,10 @@ h1{font-size:24px;font-weight:800}
 
 <div style="padding:12px 18px;background:var(--surf);border-radius:11px;font-size:12px;color:var(--dim);margin-bottom:18px;line-height:1.5" id="infoBar"></div>
 <button class="bt bt2" style="margin-bottom:9px;font-size:14px;border-color:var(--accent);color:var(--accent)" onclick="saveToHistory()">💾 Сохранить в историю</button>
-<button class="bt bt1" style="margin-bottom:9px;font-size:14px" onclick="shareTxt()">📤 Поделиться</button>
+<div style="display:flex;gap:9px;margin-bottom:9px">
+<button class="bt bt1" style="flex:2;font-size:14px" onclick="downloadSmeta('pdf')">📄 Скачать PDF</button>
+<button class="bt bt1" style="flex:1;font-size:14px" onclick="downloadSmeta('txt')">📋 Текст</button>
+</div>
 <div style="display:flex;gap:9px;margin-top:9px">
 <button class="bt bt2" style="flex:1" onclick="go(2)">← Вернуться</button>
 <button class="bt bt2" style="flex:1" onclick="resetAll()">🔄 Заново</button>
@@ -731,7 +734,7 @@ function renderMatPickTotals(count,grandTotal){
   el.innerHTML=h;
 }
 var _lastMatCount=0,_lastMatTotal=0;
-function shareMatOnly(){
+function getMatSmetaData(){
   var ml=[];
   S.materials.forEach(function(m){
     if(!m.manualOn)return;
@@ -741,51 +744,22 @@ function shareMatOnly(){
     var grp=m.matGroup||"consumables";
     ml.push({name:m.name,qty:q,unit:m.unit,price:p,sum:Math.round(q*p),pt:m.productTitle||"",grp:grp});
   });
-  if(!ml.length){alert("Не выбрано ни одного материала");return;}
-  var mt=ml.reduce(function(a,x){return a+x.sum;},0);
-  var delivery=getDeliverySum();
-  if(delivery>0)mt+=delivery;
-  var estNum=new Date().getFullYear()+"-"+String(Date.now()).slice(-6);
-  // Build the same HTML as exportMatOnlyPDF
-  var html=buildMatOnlyHTML(ml,mt,delivery,estNum);
-  var blob=new Blob([html],{type:"text/html;charset=utf-8"});
-  var file=new File([blob],"smeta-materials-"+estNum+".html",{type:"text/html"});
-  // Try sharing as file, fallback to different types
-  var shared=false;
-  try{
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      navigator.share({title:"Смета материалов — "+fmt(mt)+" грн",files:[file]}).catch(function(){});
-      shared=true;
-    }
-  }catch(e){}
-  if(!shared){
-    // Try as generic file
-    try{
-      var file2=new File([blob],"smeta-materials-"+estNum+".html",{type:"application/octet-stream"});
-      if(navigator.canShare&&navigator.canShare({files:[file2]})){
-        navigator.share({title:"Смета материалов — "+fmt(mt)+" грн",files:[file2]}).catch(function(){});
-        shared=true;
-      }
-    }catch(e){}
-  }
-  if(!shared){
-    // Fallback: share as text
-    var txt="📦 СМЕТА МАТЕРИАЛОВ\n";
-    var masterName=S._masterName||"";var masterPhone=S._masterPhone||"";
-    if(masterName)txt+=masterName+"\n";
-    if(masterPhone)txt+=masterPhone+"\n";
-    txt+="Дата: "+new Date().toLocaleDateString("uk-UA")+"\n";
-    txt+="─".repeat(30)+"\n";
-    ml.forEach(function(x){txt+=x.name+(x.pt?" ("+x.pt+")":"")+"\n  "+x.qty+" "+x.unit+" × "+fmt(x.price)+" = "+fmt(x.sum)+" грн\n";});
-    if(delivery>0)txt+="Доставка и разгрузка: "+fmt(delivery)+" грн\n";
-    txt+="─".repeat(30)+"\n";
-    txt+="ИТОГО: "+fmt(mt)+" грн\n";
-    if(navigator.share){navigator.share({title:"Смета материалов",text:txt}).catch(function(){});}
-    else if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){alert("Скопировано!");}).catch(function(){fallbackCopy(txt);});}
-    else{fallbackCopy(txt);}
-  }
+  return ml;
 }
-function buildMatOnlyHTML(ml,mt,delivery,estNum){
+function buildMatSmetaTxt(ml,mt,delivery){
+  var masterName=S._masterName||"";var masterPhone=S._masterPhone||"";
+  var txt="📦 СМЕТА МАТЕРИАЛОВ\n";
+  if(masterName)txt+=masterName+"\n";
+  if(masterPhone)txt+=masterPhone+"\n";
+  txt+="Дата: "+new Date().toLocaleDateString("uk-UA")+"\n";
+  txt+="─".repeat(30)+"\n";
+  ml.forEach(function(x){txt+=x.name+(x.pt?" ("+x.pt+")":"")+"\n  "+x.qty+" "+x.unit+" × "+fmt(x.price)+" = "+fmt(x.sum)+" грн\n";});
+  if(delivery>0)txt+="Доставка и разгрузка: "+fmt(delivery)+" грн\n";
+  txt+="─".repeat(30)+"\n";
+  txt+="ИТОГО: "+fmt(mt)+" грн\n";
+  return txt;
+}
+function buildMatSmetaHTML(ml,mt,delivery,estNum){
   var dateStr=new Date().toLocaleDateString("uk-UA");
   var masterName=S._masterName||"";var masterPhone=S._masterPhone||"";var masterNote=S._masterNote||"";
   var hasMaster=masterName||masterPhone;
@@ -796,13 +770,14 @@ function buildMatOnlyHTML(ml,mt,delivery,estNum){
   html+='th:nth-child(1){width:auto}th:nth-child(2){width:80px;text-align:center}th:nth-child(3){width:80px;text-align:right}th:nth-child(4){width:90px;text-align:right}';
   html+='td{padding:7px 10px;border-bottom:1px solid #eee;font-size:13px;vertical-align:top}';
   html+='td:nth-child(2){text-align:center;white-space:nowrap}td:nth-child(3){text-align:right;white-space:nowrap}td:nth-child(4){text-align:right;white-space:nowrap;font-weight:600}';
-  html+='.total-row td{font-weight:700;background:#4a7bd4;color:#fff;border-top:none;font-size:14px;padding:10px}';
+  html+='.total-row td{font-weight:700;background:#4a7bd4;color:#fff;font-size:14px;padding:10px}';
   html+='.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #4a7bd4}';
   html+='.header-left h1{font-size:22px;margin:0}.header-right{text-align:right;font-size:13px;color:#444}.header-right .name{font-weight:700;font-size:15px;color:#222}';
   html+='.est-info{display:flex;justify-content:space-between;margin-bottom:18px;font-size:12px;color:#666}';
   html+='.grand{text-align:center;margin:30px 0;padding:20px;background:linear-gradient(135deg,#4a7bd4,#3a63b0);color:#fff;border-radius:12px;font-size:16px}';
   html+='.grand b{font-size:28px;display:block;margin-top:6px}';
-  html+='@media print{body{padding:10px}}</style></head><body>';
+  html+='@media print{body{padding:10px}.no-print{display:none!important}}</style></head><body>';
+  html+='<div class="no-print" style="text-align:center;margin-bottom:16px"><button onclick="window.print()" style="padding:10px 28px;font-size:15px;background:#4a7bd4;color:#fff;border:none;border-radius:8px;cursor:pointer">📄 Сохранить как PDF</button></div>';
   html+='<div class="header"><div class="header-left"><h1>📦 Смета материалов</h1></div>';
   if(hasMaster){html+='<div class="header-right">';if(masterName)html+='<div class="name">'+esc(masterName)+'</div>';if(masterPhone)html+='<div>'+esc(masterPhone)+'</div>';if(masterNote)html+='<div style="font-size:11px;color:#888">'+esc(masterNote)+'</div>';html+='</div>';}
   html+='</div>';
@@ -818,6 +793,38 @@ function buildMatOnlyHTML(ml,mt,delivery,estNum){
   html+='<div class="grand">СТОИМОСТЬ МАТЕРИАЛОВ<br><b>'+fmt(mt)+' грн</b></div>';
   html+='</body></html>';
   return html;
+}
+function downloadMatSmeta(mode){
+  var ml=getMatSmetaData();
+  if(!ml.length){alert("Не выбрано ни одного материала");return;}
+  var mt=ml.reduce(function(a,x){return a+x.sum;},0);
+  var delivery=getDeliverySum();
+  if(delivery>0)mt+=delivery;
+  var estNum=new Date().getFullYear()+"-"+String(Date.now()).slice(-6);
+  if(mode==="txt"){
+    var txt=buildMatSmetaTxt(ml,mt,delivery);
+    if(navigator.share){navigator.share({title:"Смета материалов",text:txt}).catch(function(){});}
+    else if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){alert("Скопировано!");}).catch(function(){fallbackCopy(txt);});}
+    else{fallbackCopy(txt);}
+  } else {
+    var html=buildMatSmetaHTML(ml,mt,delivery,estNum);
+    var blob=new Blob([html],{type:"text/html;charset=utf-8"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="smeta-materials-"+estNum+".html";
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(a.href);},100);
+  }
+}
+function downloadSmeta(mode){
+  if(mode==="txt"){
+    var txt=buildEstimateText();
+    if(navigator.share){navigator.share({title:"Смета",text:txt}).catch(function(){});}
+    else if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){alert("Скопировано!");}).catch(function(){fallbackCopy(txt);});}
+    else{fallbackCopy(txt);}
+  } else {
+    exportPDF("all");
+  }
 }
 function resetMatPick(){
   S.materials.forEach(function(m){m.manualOn=false;m._manualQty=0;});
@@ -842,91 +849,6 @@ function goMatResult(){
   history.pushState({screen:"s3"},"","");
   renderResult();
 }
-function exportMatOnlyPDF(){
-  var ml=[];
-  S.materials.forEach(function(m){
-    if(!m.manualOn)return;
-    var q=m._manualQty||0;
-    if(q<=0)return;
-    var p=matPrice(m)||m.price||0;
-    var grp=m.matGroup||"consumables";
-    ml.push({name:m.name,qty:q,unit:m.unit,price:p,sum:Math.round(q*p),pt:m.productTitle||"",grp:grp});
-  });
-  if(!ml.length){alert("Не выбрано ни одного материала");return;}
-  var mt=ml.reduce(function(a,x){return a+x.sum;},0);
-  var estNum=new Date().getFullYear()+"-"+String(Date.now()).slice(-6);
-  var dateStr=new Date().toLocaleDateString("uk-UA");
-  var masterName=S._masterName||"";
-  var masterPhone=S._masterPhone||"";
-  var masterNote=S._masterNote||"";
-  var hasMaster=masterName||masterPhone;
-  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Смета материалов '+estNum+'</title>';
-  html+='<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;padding:28px;color:#222;font-size:14px;max-width:800px;margin:0 auto}';
-  html+='table{width:100%;border-collapse:collapse;margin-bottom:20px}';
-  html+='th{background:none;color:#888;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;border-bottom:1px solid #e5e7eb;text-transform:uppercase;letter-spacing:0.5px}';
-  html+='th:nth-child(1){width:auto}th:nth-child(2){width:80px;text-align:center}th:nth-child(3){width:80px;text-align:right}th:nth-child(4){width:90px;text-align:right}';
-  html+='td{padding:7px 10px;border-bottom:1px solid #eee;font-size:13px;vertical-align:top}';
-  html+='td:nth-child(2){text-align:center;white-space:nowrap}td:nth-child(3){text-align:right;white-space:nowrap}td:nth-child(4){text-align:right;white-space:nowrap;font-weight:600}';
-  html+='.total-row td{font-weight:700;background:#10b981;color:#fff;border-top:none;font-size:14px;padding:10px}';
-  html+='.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #10b981}';
-  html+='.header-left h1{font-size:22px;margin:0}.header-right{text-align:right;font-size:13px;color:#444}.header-right .name{font-weight:700;font-size:15px;color:#222}';
-  html+='.est-info{display:flex;justify-content:space-between;margin-bottom:18px;font-size:12px;color:#666}';
-  html+='.grand{text-align:center;margin:30px 0;padding:20px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:12px;font-size:16px}';
-  html+='.grand b{font-size:28px;display:block;margin-top:6px}';
-  html+='@media print{body{padding:10px}}</style></head><body>';
-  html+='<div class="header"><div class="header-left"><h1>📦 Смета материалов</h1></div>';
-  if(hasMaster){
-    html+='<div class="header-right">';
-    if(masterName)html+='<div class="name">'+esc(masterName)+'</div>';
-    if(masterPhone)html+='<div>'+esc(masterPhone)+'</div>';
-    if(masterNote)html+='<div style="font-size:11px;color:#888">'+esc(masterNote)+'</div>';
-    html+='</div>';
-  }
-  html+='</div>';
-  html+='<div class="est-info"><span>Смета № '+estNum+'</span><span>Дата: '+dateStr+'</span></div>';
-  var matGroups={tile:"Облицовка",grout:"Затирка",consumables:"Расходники",seal:"Герметизация",hydro:"Гидроизоляция"};
-  var groupOrder=["tile","grout","consumables","seal","hydro"];
-  html+='<table><tr><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr>';
-  groupOrder.forEach(function(gk){
-    var items=ml.filter(function(x){return x.grp===gk;});
-    if(!items.length)return;
-    html+='<tr><td colspan="4" style="background:#f8f8f8;font-weight:800;font-size:13px;color:#333;padding:8px 10px;border-bottom:2px solid #e5e7eb">'+matGroups[gk]+'</td></tr>';
-    items.forEach(function(x){
-      html+='<tr><td style="padding:8px 10px"><div style="font-weight:500;font-size:13px">'+esc(x.name)+'</div>';
-      if(x.pt)html+='<div style="color:#059669;font-size:11px;margin-top:2px">'+esc(x.pt)+'</div>';
-      html+='</td><td>'+x.qty+' '+esc(x.unit)+'</td><td style="white-space:nowrap">'+fmt(x.price)+' грн</td><td style="white-space:nowrap">'+fmt(x.sum)+' грн</td></tr>';
-    });
-  });
-  var ungrouped=ml.filter(function(x){return groupOrder.indexOf(x.grp)===-1;});
-  ungrouped.forEach(function(x){
-    html+='<tr><td style="padding:8px 10px"><div style="font-weight:500;font-size:13px">'+esc(x.name)+'</div>';
-    if(x.pt)html+='<div style="color:#059669;font-size:11px;margin-top:2px">'+esc(x.pt)+'</div>';
-    html+='</td><td>'+x.qty+' '+esc(x.unit)+'</td><td style="white-space:nowrap">'+fmt(x.price)+' грн</td><td style="white-space:nowrap">'+fmt(x.sum)+' грн</td></tr>';
-  });
-  var delivery=getDeliverySum();
-  if(delivery>0){
-    html+='<tr><td style="padding:8px 10px"><div style="font-weight:500;font-size:13px">Доставка и разгрузка</div></td><td>1</td><td style="white-space:nowrap">'+fmt(delivery)+' грн</td><td style="white-space:nowrap">'+fmt(delivery)+' грн</td></tr>';
-    mt+=delivery;
-  }
-  html+='<tr class="total-row"><td colspan="3">Итого материалы</td><td>'+fmt(mt)+' грн</td></tr></table>';
-  html+='<div class="grand">СТОИМОСТЬ МАТЕРИАЛОВ<br><b>'+fmt(mt)+' грн</b></div>';
-  html+='</body></html>';
-  try{
-    var w=window.open("","_blank");
-    if(w){
-      w.document.write(html);w.document.close();
-      setTimeout(function(){try{w.print();}catch(e){}},600);
-    } else { throw "blocked"; }
-  }catch(e){
-    var blob=new Blob([html],{type:"text/html;charset=utf-8"});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement("a");
-    a.href=url;a.download="smeta-materials-"+estNum+".html";
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-}
-
 function updWorkTotals(){
   const a=calcW();
   $("s2a").textContent=a;$("s2p").textContent=TILE_WORK.price;$("s2t").textContent=fmt(Math.round(a*TILE_WORK.price));
@@ -1617,54 +1539,22 @@ td:nth-child(2){text-align:center;white-space:nowrap}td:nth-child(3){text-align:
   html+=`</div><div class="footer"><span>Смета № ${estNum} · ${dateStr}</span><span>Powered by Tiler's Assistant by pro.tiler.od</span></div></body></html>`;
 
   const sfx=mode==="works"?"_raboty":mode==="mats"?"_materialy":"";
-  const w2=window.open("","_blank");
-  if(w2){w2.document.write(html);w2.document.close();setTimeout(function(){w2.print();},500);}
-  else{
-    var iframe=document.createElement("iframe");
-    iframe.style.display="none";document.body.appendChild(iframe);
-    iframe.contentDocument.write(html);iframe.contentDocument.close();
-    setTimeout(function(){iframe.contentWindow.print();setTimeout(function(){document.body.removeChild(iframe);},1000);},500);
-  }
+  // Add print button to HTML (hidden on print)
+  html=html.replace('<body>','<body><div class="no-print" style="text-align:center;margin-bottom:16px"><button onclick="window.print()" style="padding:10px 28px;font-size:15px;background:#4a7bd4;color:#fff;border:none;border-radius:8px;cursor:pointer">📄 Сохранить как PDF</button></div>');
+  html=html.replace('@media print{','@media print{.no-print{display:none!important}');
+  var blob=new Blob([html],{type:"text/html;charset=utf-8"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="smeta"+sfx+"_"+estNum+".html";
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(a.href);},100);
 }
 
 function shareTxt(){
-  // Try to share as HTML file first
-  var estNum=new Date().getFullYear()+"-"+String(Date.now()).slice(-6);
   var txt=buildEstimateText();
-  // Build HTML for file sharing
-  try{
-    var htmlStr=buildShareHTML(txt,estNum);
-    var blob=new Blob([htmlStr],{type:"text/html;charset=utf-8"});
-    var file=new File([blob],"smeta-"+estNum+".html",{type:"text/html"});
-    var shared=false;
-    try{
-      if(navigator.canShare&&navigator.canShare({files:[file]})){
-        navigator.share({title:"Смета — расчёт",files:[file]}).catch(function(){});
-        return;
-      }
-    }catch(e){}
-    // Try generic type
-    try{
-      var file2=new File([blob],"smeta-"+estNum+".html",{type:"application/octet-stream"});
-      if(navigator.canShare&&navigator.canShare({files:[file2]})){
-        navigator.share({title:"Смета — расчёт",files:[file2]}).catch(function(){});
-        return;
-      }
-    }catch(e){}
-  }catch(e){}
-  // Fallback: share as text
-  if(navigator.share){
-    navigator.share({title:"Расчетный лист",text:txt}).catch(()=>{});
-  }else if(navigator.clipboard){
-    navigator.clipboard.writeText(txt).then(()=>{alert("Скопировано в буфер обмена!")}).catch(()=>fallbackCopy(txt));
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(function(){alert("Скопировано в буфер обмена!");}).catch(function(){fallbackCopy(txt);});
   }else{fallbackCopy(txt);}
-}
-function buildShareHTML(txt,estNum){
-  var lines=txt.split("\n");
-  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Смета '+estNum+'</title>';
-  html+='<style>body{font-family:system-ui,sans-serif;padding:24px;max-width:700px;margin:0 auto;color:#222;font-size:14px;line-height:1.6}pre{white-space:pre-wrap;font-family:inherit;}</style>';
-  html+='</head><body><pre>'+esc(txt)+'</pre></body></html>';
-  return html;
 }
 function fallbackCopy(txt){
   const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);alert("Скопировано в буфер обмена!");
