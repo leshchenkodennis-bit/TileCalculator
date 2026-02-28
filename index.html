@@ -631,7 +631,32 @@ function resetWorksGroup(flagName){
   });
   saveState();renderWC();
 }
-function toggleW(i){const w=S.works[i];if(w.group&&!w.enabled)S.works.forEach(x=>{if(x.group===w.group)x.enabled=false;});w.enabled=!w.enabled;saveState();renderWC();renderMC();if(w.enabled&&w.type==="manual"){setTimeout(function(){var inp=document.querySelector('#workCards input[oninput*="works['+i+']"],#fabricCards input[oninput*="works['+i+']"]');if(inp){inp.focus();inp.select();}},50);}}
+function toggleW(i){
+  const w=S.works[i];
+  if(w.group&&!w.enabled)S.works.forEach(x=>{if(x.group===w.group)x.enabled=false;});
+  w.enabled=!w.enabled;
+  saveState();
+  // For manual type, update DOM in-place to keep keyboard open
+  if(w.type==="manual"){
+    var card=document.getElementById('workQty'+i);
+    if(card){
+      var wi=card.closest('.wi');
+      if(wi){
+        var ck=wi.querySelector('.ck');
+        if(ck)ck.textContent=w.enabled?'✓':'';
+        if(w.enabled){wi.classList.add('on');}else{wi.classList.remove('on');}
+      }
+    }
+    updWorkTotals();
+    if(w.enabled){
+      var inp=document.getElementById('workQty'+i);
+      if(inp){inp.focus();}
+    }
+  } else {
+    renderWC();
+  }
+  renderMC();
+}
 
 // ═══ MATERIAL-ONLY MODE ═══
 function goMatOnly(){
@@ -832,12 +857,25 @@ function resetMatPick(){
 function toggleMatPick(i){
   var m=S.materials[i];
   m.manualOn=!m.manualOn;
-  saveState();renderMatPick();
+  saveState();
+  // Update DOM in-place without full re-render
+  var cards=document.querySelectorAll('#matPickCards .wi');
+  // Find the card for this material index
+  var cardIdx=0;
+  for(var gi=0;gi<S.materials.length;gi++){
+    if(gi===i)break;
+    cardIdx++;
+  }
+  var card=cards[cardIdx];
+  if(card){
+    var ck=card.querySelector('.ck');
+    if(ck)ck.textContent=m.manualOn?'✓':'';
+    if(m.manualOn){card.classList.add('on');}else{card.classList.remove('on');}
+  }
+  updateMatPickTotals();
   if(m.manualOn){
-    setTimeout(function(){
-      var inp=document.querySelector('#matPickCards input[oninput*="materials['+i+']"]');
-      if(inp){inp.focus();inp.select();}
-    },50);
+    var inp=document.getElementById('matQty'+i);
+    if(inp){inp.focus();}
   }
 }
 function goMatResult(){
