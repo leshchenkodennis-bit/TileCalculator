@@ -638,7 +638,7 @@ function renderWorkSection(targetId, title, filterFn, showFlag, flagName){
       var w=obj.w,i=obj.i;
       const on=w.enabled,q=wQty(w,a),s=on?Math.round(q*w.price):0;
       h+=`<div class="wi${on?" on":""}"><div style="display:flex;align-items:center;gap:10px"><div class="ck" style="cursor:pointer" onclick="toggleW(${i})">${on?"✓":""}</div><div style="flex:1;min-width:0;cursor:pointer" onclick="toggleW(${i})"><div style="font-weight:600;font-size:14px">${esc(w.name)}${w.title?' <span style="color:var(--accent);font-size:12px;font-weight:500">'+esc(w.title)+'</span>':""}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${w.price} грн/${esc(w.unit)}${on&&q>0?" · "+q+" "+esc(w.unit)+" = "+fmt(s)+" грн":""}${w.deduct?" · −"+w.deduct+" м²":""}</div></div><button onclick="openWorkEd(${i})" style="background:none;border:none;cursor:pointer;font-size:15px;padding:4px;color:var(--dim)" title="Ред."><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>${!BASE_WORKS.find(bw=>bw.id===w.id)?`<button onclick="S.works.splice(${i},1);saveState();renderWC()" style="background:none;border:none;cursor:pointer;font-size:13px;padding:4px;color:var(--err)">✕</button>`:""}</div>`;
-      if(on&&w.type==="manual")h+=`<div style="margin-top:6px;display:flex;align-items:center;gap:8px;padding-left:36px"><span style="font-size:11px;color:var(--dim)">Кол-во:</span><input id="workQty${i}" class="inp-s" type="number" step="0.1" value="${w.qty||""}" style="width:70px;font-size:13px" oninput="S.works[${i}].qty=parseFloat(this.value)||0;saveState();updWorkTotals()" onkeydown="if(event.key==='Enter')this.blur()"><span style="font-size:11px;color:var(--dim)">${esc(w.unit)}</span></div>`;
+      if(on&&w.type==="manual")h+=`<div style="margin-top:6px;display:flex;align-items:center;gap:8px;padding-left:36px"><span style="font-size:11px;color:var(--dim)">Кол-во:</span><input id="workQty${i}" class="inp-s" type="number" step="0.1" value="${w.qty||""}" style="width:70px;font-size:13px" oninput="S.works[${i}].qty=parseFloat(this.value)||0;saveState();updWorkTotals()" onkeydown="if(event.keyCode===13)this.blur()"><span style="font-size:11px;color:var(--dim)">${esc(w.unit)}</span></div>`;
       if(!on&&w.type==="manual")h+=`<div style="margin-top:6px;display:flex;align-items:center;gap:8px;padding-left:36px"><span style="font-size:11px;color:var(--dim)">Кол-во:</span><input id="workQty${i}" class="inp-s" type="number" step="0.1" value="" placeholder="0" style="width:70px;font-size:13px" onfocus="if(!S.works[${i}].enabled){S.works[${i}].enabled=true;saveState();var el=this.closest('.wi');if(el)el.classList.add('on');var ck=el?el.querySelector('.ck'):null;if(ck)ck.textContent='✓';}" oninput="S.works[${i}].qty=parseFloat(this.value)||0;if(!S.works[${i}].enabled){S.works[${i}].enabled=true;}saveState();updWorkTotals()"><span style="font-size:11px;color:var(--dim)">${esc(w.unit)}</span></div>`;
       h+=`</div></div>`;
     });
@@ -726,7 +726,7 @@ function renderMatPick(){
       h+=`</div>`;
       h+=`<div style="margin-top:6px;display:flex;align-items:center;gap:8px;padding-left:36px">`;
       h+=`<span style="font-size:11px;color:var(--dim)">Кол-во:</span>`;
-      h+=`<input id="matQty${i}" class="inp-s" type="number" step="0.1" value="${q||""}" placeholder="0" style="width:70px;font-size:13px" oninput="S.materials[${i}]._manualQty=parseFloat(this.value)||0;if(!S.materials[${i}].manualOn){S.materials[${i}].manualOn=true;}saveState();updateMatPickTotals()" onkeydown="if(event.key==='Enter')this.blur()" onfocus="if(!S.materials[${i}].manualOn){S.materials[${i}].manualOn=true;saveState();var el=this.closest('.wi');if(el)el.classList.add('on');var ck=el?el.querySelector('.ck'):null;if(ck)ck.textContent='✓';}">`;
+      h+=`<input id="matQty${i}" class="inp-s" type="number" step="0.1" value="${q||""}" placeholder="0" style="width:70px;font-size:13px" oninput="S.materials[${i}]._manualQty=parseFloat(this.value)||0;if(!S.materials[${i}].manualOn){S.materials[${i}].manualOn=true;}saveState();updateMatPickTotals()" onkeydown="if(event.keyCode===13)this.blur()" onfocus="if(!S.materials[${i}].manualOn){S.materials[${i}].manualOn=true;saveState();var el=this.closest('.wi');if(el)el.classList.add('on');var ck=el?el.querySelector('.ck'):null;if(ck)ck.textContent='✓';}">`;
       h+=`<span style="font-size:11px;color:var(--dim)">${esc(m.unit)}</span>`;
       if(on&&sum>0)h+=`<span style="font-size:12px;font-weight:700;color:var(--accent);margin-left:auto">${fmt(sum)} грн</span>`;
       h+=`</div>`;
@@ -769,7 +769,7 @@ function renderDeliveryBlock(){
   h+='<div style="display:flex;align-items:center;gap:10px">';
   h+='<div class="ck" style="cursor:pointer" onclick="toggleDelivery()">'+(on?'✓':'')+'</div>';
   h+='<div style="flex:1;min-width:0;cursor:pointer" onclick="toggleDelivery()"><div style="font-weight:600;font-size:14px">Доставка и разгрузка</div></div>';
-  h+='<input id="deliveryPriceInp" type="number" inputmode="numeric" value="'+price+'" style="width:80px;text-align:right;font-size:15px;font-weight:700;background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:6px 8px;color:var(--text)" oninput="S._deliveryPrice=parseInt(this.value)||0;saveState();updateMatPickTotals(true)" onkeydown="if(event.key===\'Enter\')this.blur()">';
+  h+='<input id="deliveryPriceInp" type="number" inputmode="numeric" value="'+price+'" style="width:80px;text-align:right;font-size:15px;font-weight:700;background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:6px 8px;color:var(--text)" oninput="S._deliveryPrice=parseInt(this.value)||0;saveState();updateMatPickTotals(true)" onkeydown="if(event.keyCode===13)this.blur()">';
   h+='<span style="font-size:13px;color:var(--dim)">грн</span>';
   h+='</div></div>';
   el.innerHTML=h;
@@ -2087,6 +2087,8 @@ window.addEventListener("popstate",function(e){
 
 // Back button: navigate steps instead of closing app
 $("iL").addEventListener("input",updGeo);$("iW").addEventListener("input",updGeo);$("iD").addEventListener("input",updGeo);$("iTW").addEventListener("input",updGeo);$("iTH").addEventListener("input",updGeo);$("iTD").addEventListener("input",updGeo);$("iGap").addEventListener("input",updGeo);updGeo();renderHistory();
+// Global: "Enter"/"Go"/"Перейти" on any number input → blur (close keyboard)
+document.addEventListener("keydown",function(e){if(e.keyCode===13&&e.target&&e.target.type==="number"){e.preventDefault();e.target.blur();}});
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');</script>
 </body>
