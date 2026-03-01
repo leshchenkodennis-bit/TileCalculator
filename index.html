@@ -564,7 +564,10 @@ function matQty(m,area){
     }
     return 1;
   }
-  if(m.fixedQty)return m.fixedQty;
+  if(m.fixedQty){
+    if(m.cond&&m.cond.indexOf(",")>=0){var _ei=eIds();var _cc=m.cond.split(",").filter(function(c){return _ei.has(c.trim());}).length;return m.fixedQty*(_cc||1);}
+    return m.fixedQty;
+  }
   if(m.rate>0)return Math.ceil(area*m.rate);
   return 0;
 }
