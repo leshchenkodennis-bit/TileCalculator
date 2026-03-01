@@ -2087,8 +2087,8 @@ window.addEventListener("popstate",function(e){
 
 // Back button: navigate steps instead of closing app
 $("iL").addEventListener("input",updGeo);$("iW").addEventListener("input",updGeo);$("iD").addEventListener("input",updGeo);$("iTW").addEventListener("input",updGeo);$("iTH").addEventListener("input",updGeo);$("iTD").addEventListener("input",updGeo);$("iGap").addEventListener("input",updGeo);updGeo();renderHistory();
-// Global: "Enter"/"Go"/"Перейти" on any number input → blur (close keyboard)
-document.addEventListener("keydown",function(e){if(e.keyCode===13&&e.target&&e.target.type==="number"){e.preventDefault();e.target.blur();}});
+// Global: "Enter"/"Go"/"Перейти" on any number input → focus next input or blur
+document.addEventListener("keydown",function(e){if(e.keyCode===13&&e.target&&e.target.type==="number"){e.preventDefault();var inputs=Array.from(document.querySelectorAll('input[type=number]:not([style*="display:none"])'));var idx=inputs.indexOf(e.target);var next=null;for(var j=idx+1;j<inputs.length;j++){if(inputs[j].offsetParent!==null){next=inputs[j];break;}}if(next){next.focus();next.select();}else{e.target.blur();}}});
 </script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').then(function(r){r.update();});}</script>
 </body>
