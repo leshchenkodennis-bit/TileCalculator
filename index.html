@@ -2090,6 +2090,6 @@ $("iL").addEventListener("input",updGeo);$("iW").addEventListener("input",updGeo
 // Global: "Enter"/"Go"/"Перейти" on any number input → blur (close keyboard)
 document.addEventListener("keydown",function(e){if(e.keyCode===13&&e.target&&e.target.type==="number"){e.preventDefault();e.target.blur();}});
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');</script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').then(function(r){r.update();});}</script>
 </body>
 </html>
