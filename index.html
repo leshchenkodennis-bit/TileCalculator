@@ -377,7 +377,8 @@ const BASE_MATS=[
   {id:"hydro",name:"Обмазочная гидроизоляция (7кг)",unit:"ведро",rate:0,price:1500,productTitle:"Ceresit CL 51",enabled:true,links:[],fixedQty:1,cond:"tray",matGroup:"hydro"},
   {id:"hydroTape",name:"Гидроизоляционная лента (10м)",unit:"шт",rate:0,price:1200,productTitle:"Ceresit CL 152",enabled:true,links:[],fixedQty:1,cond:"tray",matGroup:"hydro"},
   {id:"screed",name:"Стяжка для пола",unit:"шт",rate:0,price:165,productTitle:"Anserglob LFS-70",enabled:false,links:[],fixedQty:10,matGroup:"consumables"},
-  {id:"drywall",name:"Гипсокартон",unit:"шт",rate:0,price:465,productTitle:"Knauf",enabled:false,links:[],fixedQty:1,cond:"bathScreen,install",matGroup:"consumables"},
+  {id:"drywall",name:"Гипсокартон 2.5 м",unit:"шт",rate:0,price:465,productTitle:"Knauf",enabled:false,links:[],fixedQty:1,cond:"install",matGroup:"consumables"},
+  {id:"drywallShort",name:"Гипсокартон 2 м",unit:"шт",rate:0,price:360,productTitle:"Knauf",enabled:false,links:[],fixedQty:1,cond:"bathScreen",matGroup:"consumables"},
   {id:"profileUD",name:"Профиль UD 3 м",unit:"шт",rate:0,price:70,productTitle:"Knauf",enabled:false,links:[],fixedQty:1,cond:"bathScreen,install",matGroup:"consumables"},
   {id:"profileCD",name:"Профиль CD 3 м",unit:"шт",rate:0,price:117,productTitle:"Knauf",enabled:false,links:[],fixedQty:2,cond:"bathScreen,install",matGroup:"consumables"},
 ];
@@ -565,7 +566,10 @@ function matQty(m,area){
     return 1;
   }
   if(m.fixedQty){
-    if(m.cond&&m.cond.indexOf(",")>=0){var _ei=eIds();var _cc=m.cond.split(",").filter(function(c){return _ei.has(c.trim());}).length;return m.fixedQty*(_cc||1);}
+    if(m.cond){
+      var _ei=eIds(),_cc=String(m.cond).split(",").filter(function(c){return _ei.has(c.trim());}).length;
+      return m.fixedQty*Math.max(_cc,1);
+    }
     return m.fixedQty;
   }
   if(m.rate>0)return Math.ceil(area*m.rate);
