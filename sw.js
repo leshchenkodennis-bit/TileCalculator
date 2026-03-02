@@ -1,4 +1,4 @@
-var CACHE_NAME = 'tilecalc-v47';
+var CACHE_NAME = 'tilecalc-v49';
 var urlsToCache = [
   './',
   './index.html',

@@ -331,7 +331,7 @@ h1{font-size:24px;font-weight:800}
 
 <script>
 // v20: one-time full reset to clear stale preview/iframe cache
-if(!localStorage.getItem("tilecalc_v47_clean")){
+if(!localStorage.getItem("tilecalc_v49_clean")){
   var _v20prof=null,_v20hist=null,_v20memo=null;
   try{_v20prof=localStorage.getItem("tilecalc_prof");}catch(e){}
   try{_v20hist=localStorage.getItem("tilecalc_history");}catch(e){}
@@ -356,7 +356,7 @@ if(!localStorage.getItem("tilecalc_v47_clean")){
   localStorage.setItem("tilecalc_prof",JSON.stringify({mn:_v20save.mn||"",mp:_v20save.mp||"",mno:_v20save.mno||"",mm:_v20save.mm||"",tp:_v20save.tp||0,h:_v20save.h||0}));
   if(_v20hist)localStorage.setItem("tilecalc_history",_v20hist);
   if(_bestMemo)localStorage.setItem("tilecalc_memo",_bestMemo);
-  localStorage.setItem("tilecalc_v47_clean","1");
+  localStorage.setItem("tilecalc_v49_clean","1");
 }
 // One-time reset to clear corrupted data from previous versions
 if(!localStorage.getItem("tilecalc_v15_delivery")){
@@ -728,6 +728,7 @@ function openWorkListMo(flagName){
     h+='</div></div>';
   });
   h+=`<div style="margin-top:10px"><button class="bt bt2" style="width:100%;padding:12px;font-size:14px" onclick="closeListMo();openWorkEd(-1,'${flagName}')">+ Добавить</button></div>`;
+  h+=`<div style="margin-top:8px"><button class="bt bt1" style="width:100%;padding:12px;font-size:14px;" onclick="closeListMoReset();go(3)">Далее →</button></div>`;
   openListMo(title,h);
 }
 function refreshWorkListMo(flagName){
@@ -1111,6 +1112,7 @@ function renderMC(){
   });
 
   h+=`<button class="bt bt2" style="padding:12px;font-size:14px;margin-top:4px" onclick="openMatEd(-1)">+ Добавить материал</button>`;
+  h+=`<button class="bt bt1" style="padding:12px;font-size:14px;margin-top:4px;" onclick="go(3)">Далее →</button>`;
   h+=`<button class="bt bt2" style="padding:12px;font-size:14px;margin-top:4px" onclick="showMatList=false;matSortOrder=null;renderMC()">▲ Свернуть материалы</button>`;
   _sh("matCards",h);
 }
