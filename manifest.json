@@ -1,10 +1,11 @@
 {
   "name": "Калькулятор плиточных работ",
   "short_name": "ПлиткаCalc",
-  "start_url": ".",
+  "description": "Калькулятор плиточных работ",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0f0f1a",
-  "theme_color": "#0f0f1a",
+  "background_color": "#f2f3f5",
+  "theme_color": "#f2f3f5",
   "icons": [
     {
       "src": "icon-192.png",
