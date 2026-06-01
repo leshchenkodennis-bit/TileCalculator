@@ -679,8 +679,8 @@ function renderWorkSection(targetId, title, filterFn, showFlag, flagName){
     S.works.forEach((w,i)=>{
       if(!filterFn(w))return;
       const on=w.enabled,q=wQty(w,a),s=on?Math.round(q*w.price):0;
-      h+=`<div class="wi${on?" on":""}"><div style="display:flex;align-items:center;gap:10px"><div class="ck" style="cursor:pointer" onclick="toggleW(${i})">${on?"✓":""}</div><div style="flex:1;min-width:0;cursor:pointer" onclick="toggleW(${i})"><div style="font-weight:600;font-size:14px">${esc(w.name)}${w.title?' <span style="color:var(--accent);font-size:12px;font-weight:500">'+esc(w.title)+'</span>':""}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${w.price} грн/${esc(w.unit)}${on&&q>0?" · "+q+" "+esc(w.unit)+" = "+fmt(s)+" грн":""}${w.deduct?" · −"+w.deduct+" м²":""}</div></div><button onclick="openWorkEd(${i})" style="background:none;border:none;cursor:pointer;font-size:15px;padding:4px;color:var(--dim)" title="Ред."><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>${!BASE_WORKS.find(bw=>bw.id===w.id)?`<button onclick="S.works.splice(${i},1);saveState();renderWC()" style="background:none;border:none;cursor:pointer;font-size:13px;padding:4px;color:var(--err)">✕</button>`:""}</div>`;
-      if(on&&w.type==="manual")h+=`<div style="margin-top:6px;display:flex;align-items:center;gap:8px;padding-left:36px"><span style="font-size:11px;color:var(--dim)">Кол-во:</span><input id="wq${i}" class="inp-s" type="number" step="0.1" value="${w.qty||""}" style="width:70px;font-size:13px" oninput="S.works[${i}].qty=parseFloat(this.value)||0;saveState();updWorkTotals()" onkeydown="if(event.keyCode===13)this.blur()"><span style="font-size:11px;color:var(--dim)">${esc(w.unit)}</span></div>`;
+      h+=`<div id="wc${i}" class="wi${on?" on":""}"><div style="display:flex;align-items:center;gap:10px"><div class="ck" style="cursor:pointer" onclick="toggleW(${i})">${on?"✓":""}</div><div style="flex:1;min-width:0;cursor:pointer" onclick="toggleW(${i})"><div style="font-weight:600;font-size:14px">${esc(w.name)}${w.title?' <span style="color:var(--accent);font-size:12px;font-weight:500">'+esc(w.title)+'</span>':""}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${w.price} грн/${esc(w.unit)}${on&&q>0?" · "+q+" "+esc(w.unit)+" = "+fmt(s)+" грн":""}${w.deduct?" · −"+w.deduct+" м²":""}</div></div><button onclick="openWorkEd(${i})" style="background:none;border:none;cursor:pointer;font-size:15px;padding:4px;color:var(--dim)" title="Ред."><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>${!BASE_WORKS.find(bw=>bw.id===w.id)?`<button onclick="S.works.splice(${i},1);saveState();renderWC()" style="background:none;border:none;cursor:pointer;font-size:13px;padding:4px;color:var(--err)">✕</button>`:""}</div>`;
+      if(on&&w.type==="manual")h+=`<div class="wq-wrap" style="margin-top:6px;display:flex;align-items:center;gap:8px;padding-left:36px"><span style="font-size:11px;color:var(--dim)">Кол-во:</span><input id="wq${i}" class="inp-s" type="number" step="0.1" value="${w.qty||""}" style="width:70px;font-size:13px" oninput="S.works[${i}].qty=parseFloat(this.value)||0;saveState();updWorkTotals()" onkeydown="if(event.keyCode===13)this.blur()"><span style="font-size:11px;color:var(--dim)">${esc(w.unit)}</span></div>`;
       h+=`</div></div>`;
     });
     h+=`<button class="bt bt2" style="padding:12px;font-size:14px;margin-top:4px" onclick="openWorkEd(-1,'${flagName}')">+ Добавить работу</button>`;
@@ -703,7 +703,11 @@ function resetWorksGroup(flagName){
   });
   saveState();renderWC();
 }
-function toggleW(i){const w=S.works[i];if(w.group&&!w.enabled)S.works.forEach(x=>{if(x.group===w.group)x.enabled=false;});w.enabled=!w.enabled;saveState();renderWC();renderMC();if(w.enabled&&w.type==="manual"){setTimeout(function(){var el=$("wq"+i);if(el){el.focus();el.select();}},100);}}
+function toggleW(i){var w=S.works[i];
+if(w.group&&!w.enabled){S.works.forEach(function(x,j){if(x.group===w.group&&x.enabled){x.enabled=false;var gc=$("wc"+j);if(gc){gc.classList.remove("on");var ck=gc.querySelector(".ck");if(ck)ck.textContent="";var qd=gc.querySelector(".wq-wrap");if(qd)qd.remove();}}});}
+w.enabled=!w.enabled;saveState();
+var card=$("wc"+i);if(card){if(w.enabled){card.classList.add("on");var ck=card.querySelector(".ck");if(ck)ck.textContent="\u2713";if(w.type==="manual"){var qd=document.createElement("div");qd.className="wq-wrap";qd.style.cssText="margin-top:6px;display:flex;align-items:center;gap:8px;padding-left:36px";qd.innerHTML='<span style="font-size:11px;color:var(--dim)">Кол-во:</span><input id="wq'+i+'" class="inp-s" type="number" step="0.1" value="'+(w.qty||"")+'" style="width:70px;font-size:13px" oninput="S.works['+i+'].qty=parseFloat(this.value)||0;saveState();updWorkTotals()" onkeydown="if(event.keyCode===13)this.blur()"><span style="font-size:11px;color:var(--dim)">'+esc(w.unit)+'</span>';card.appendChild(qd);var inp=$("wq"+i);if(inp){inp.focus();}}}else{card.classList.remove("on");var ck=card.querySelector(".ck");if(ck)ck.textContent="";var qd=card.querySelector(".wq-wrap");if(qd)qd.remove();}}
+updWorkTotals();}
 
 // ═══ MATERIAL-ONLY MODE ═══
 function goMatOnly(){
@@ -731,7 +735,7 @@ function renderMatPick(){
       var price=matPrice(m)||m.price||0;
       var sum=on&&q>0?Math.round(q*price):0;
       if(on&&q>0){grandTotal+=sum;count++;}
-      h+=`<div class="wi${on?" on":""}"><div style="display:flex;align-items:center;gap:10px">`;
+      h+=`<div id="wc${i}" class="wi${on?" on":""}"><div style="display:flex;align-items:center;gap:10px">`;
       h+=`<div class="ck" style="cursor:pointer" onclick="toggleMatPick(${i})">${on?"✓":""}</div>`;
       h+=`<div style="flex:1;min-width:0;cursor:pointer" onclick="toggleMatPick(${i})">`;
       h+=`<div style="font-weight:600;font-size:14px">${esc(m.name)}</div>`;
@@ -2020,7 +2024,7 @@ window.addEventListener("popstate",function(e){
 })();
 
 // Back button: navigate steps instead of closing app
-updGeo();renderHistory();
+S.lines=[];saveState();renderLines();renderHistory();
 document.addEventListener("keydown",function(e){if(e.keyCode===13&&e.target&&e.target.type==="number"){e.preventDefault();var inputs=Array.from(document.querySelectorAll('input[type=number]:not([style*="display:none"])'));var idx=inputs.indexOf(e.target);var next=null;for(var j=idx+1;j<inputs.length;j++){if(inputs[j].offsetParent!==null){next=inputs[j];break;}}if(next){next.focus();next.select();}else{e.target.blur();}}});
 </script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').then(function(r){r.update();});}</script>
