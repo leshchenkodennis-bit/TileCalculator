@@ -145,6 +145,39 @@ h1{font-size:24px;font-weight:800}
 <input type="number" id="iGap" value="2">
 </div>
 </div>
+
+<div style="margin-bottom:12px">
+<button onclick="toggleWallCalc()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--dim);cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between"><span>📐 Калькулятор стен</span><span id="wallCalcArrow" style="font-size:10px">▼</span></button>
+</div>
+<div id="wallCalcSection" style="display:none;margin-bottom:14px">
+<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+<input class="inp" type="number" id="wallH" placeholder="Высота (м)" step="0.01" value="2.7" style="flex:1" oninput="updWallCalc()">
+<span style="color:var(--dim);font-size:16px">×</span>
+<input class="inp" type="number" id="wallW" placeholder="Ширина (м)" step="0.01" style="flex:1" oninput="updWallCalc()">
+<span style="color:var(--dim);font-size:14px">=</span>
+<span id="wallCalcRes" style="font-size:15px;font-weight:700;color:var(--accent);min-width:50px;text-align:right">0</span>
+<span style="font-size:11px;color:var(--dim)">м²</span>
+<button onclick="addWallToLine()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:16px;cursor:pointer;font-weight:700">+</button>
+</div>
+<div id="wallLog" style="font-size:11px;color:var(--dim);line-height:1.6"></div>
+</div>
+
+<div style="margin-bottom:12px">
+<button onclick="toggleFloorCalc()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--dim);cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between"><span>📐 Калькулятор полов</span><span id="floorCalcArrow" style="font-size:10px">▼</span></button>
+</div>
+<div id="floorCalcSection" style="display:none;margin-bottom:14px">
+<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+<input class="inp" type="number" id="floorL" placeholder="Длина (м)" step="0.01" style="flex:1" oninput="updFloorCalc()">
+<span style="color:var(--dim);font-size:16px">×</span>
+<input class="inp" type="number" id="floorW" placeholder="Ширина (м)" step="0.01" style="flex:1" oninput="updFloorCalc()">
+<span style="color:var(--dim);font-size:14px">=</span>
+<span id="floorCalcRes" style="font-size:15px;font-weight:700;color:var(--accent);min-width:50px;text-align:right">0</span>
+<span style="font-size:11px;color:var(--dim)">м²</span>
+<button onclick="addFloorToLine()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:16px;cursor:pointer;font-weight:700">+</button>
+</div>
+<div id="floorLog" style="font-size:11px;color:var(--dim);line-height:1.6"></div>
+</div>
+
 <button class="bt bt1" onclick="S._mode='full';saveState();go(2)">Далее →</button>
 <button class="bt bt2" style="margin-top:9px;font-size:14px;border-color:var(--ok);color:var(--ok)" onclick="S._mode='matOnly';saveState();goMatOnly()">📦 Смета на материалы</button>
 <button class="bt bt2" style="margin-top:9px;font-size:14px" onclick="openSettings()">⚙️ Персонализация мастера</button>
@@ -367,7 +400,7 @@ h+='</div>';});
 $("linesContainer").innerHTML=h;
 updLineTotals();}
 function addLine(){initLines();S.lines.push({name:"",area:0,price:TILE_WORK.price});saveState();renderLines();}
-function removeLine(i){S.lines.splice(i,1);saveState();renderLines();}
+function removeLine(i){var removed=S.lines[i];if(removed){if(removed.name==="Укладка стен"){_wallParts=[];$("wallLog").innerHTML="";}if(removed.name==="Укладка пола"){_floorParts=[];$("floorLog").innerHTML="";}}S.lines.splice(i,1);saveState();renderLines();}
 function updLine(i,f,v){initLines();S.lines[i][f]=v;saveState();var ln=S.lines[i];var el=$("lineSum"+i);if(el)el.textContent=fmt(Math.round((ln.area||0)*(ln.price||0)));updLineTotals();}
 function updLineTotals(){initLines();var ta=0,ts=0;S.lines.forEach(function(ln){ta+=ln.area||0;ts+=Math.round((ln.area||0)*(ln.price||0));});
 var box=$("linesTotalBox");if(ta>0){box.style.display="block";$("linesTotalArea").textContent=r1(ta);$("linesTotalSum").textContent=fmt(ts);}else{box.style.display="none";}}
@@ -375,6 +408,15 @@ function getLinesArea(){initLines();var t=0;S.lines.forEach(function(ln){t+=ln.a
 function getLinesTotalCost(){initLines();var t=0;S.lines.forEach(function(ln){t+=Math.round((ln.area||0)*(ln.price||0));});return t;}
 function updCalcResult(){var l=parseFloat($("iL").value)||0,w=parseFloat($("iW").value)||0;var fl=Math.round(l*w*100)/100;var wa=Math.round(((l+w)*2*H-DA)*100)/100;if(wa<0)wa=0;var box=$("calcResult");if(fl>0){box.style.display="block";$("calcFloor").textContent=fl;$("calcWalls").textContent=r1(wa);$("calcTotal").textContent=r1(fl+wa);}else{box.style.display="none";}}
 function applyCalcToLine(){var l=parseFloat($("iL").value)||0,w=parseFloat($("iW").value)||0;var fl=Math.round(l*w*100)/100;var wa=Math.round(((l+w)*2*H-DA)*100)/100;if(wa<0)wa=0;if(fl<=0)return;initLines();var defP=S.lines.length>0&&S.lines[0].price?S.lines[0].price:650;S.lines=[];if(fl>0)S.lines.push({name:"Укладка пола",area:fl,price:defP});if(wa>0)S.lines.push({name:"Укладка стен",area:wa,price:defP});$("iL").value="";$("iW").value="";$("calcResult").style.display="none";saveState();renderLines();toggleCalcSection();}
+var _wallParts=[],_floorParts=[];
+function toggleWallCalc(){var el=$("wallCalcSection"),a=$("wallCalcArrow");if(el.style.display==="none"){el.style.display="block";a.textContent="\u25b2";}else{el.style.display="none";a.textContent="\u25bc";}}
+function toggleFloorCalc(){var el=$("floorCalcSection"),a=$("floorCalcArrow");if(el.style.display==="none"){el.style.display="block";a.textContent="\u25b2";}else{el.style.display="none";a.textContent="\u25bc";}}
+function updWallCalc(){var h=parseFloat($("wallH").value)||0,w=parseFloat($("wallW").value)||0;$("wallCalcRes").textContent=r1(h*w);}
+function updFloorCalc(){var l=parseFloat($("floorL").value)||0,w=parseFloat($("floorW").value)||0;$("floorCalcRes").textContent=r1(l*w);}
+function addWallToLine(){var h=parseFloat($("wallH").value)||0,w=parseFloat($("wallW").value)||0;var a=r1(h*w);if(a<=0)return;_wallParts.push({h:h,w:w,a:a});var total=0;_wallParts.forEach(function(p){total+=p.a;});total=r1(total);initLines();var found=false;for(var i=0;i<S.lines.length;i++){if(S.lines[i].name==="Укладка стен"){S.lines[i].area=total;found=true;break;}}if(!found){var defP=S.lines.length>0&&S.lines[0].price?S.lines[0].price:650;S.lines.push({name:"Укладка стен",area:total,price:defP});}$("wallW").value="";$("wallCalcRes").textContent="0";saveState();renderLines();renderWallLog();}
+function addFloorToLine(){var l=parseFloat($("floorL").value)||0,w=parseFloat($("floorW").value)||0;var a=r1(l*w);if(a<=0)return;_floorParts.push({l:l,w:w,a:a});var total=0;_floorParts.forEach(function(p){total+=p.a;});total=r1(total);initLines();var found=false;for(var i=0;i<S.lines.length;i++){if(S.lines[i].name==="Укладка пола"){S.lines[i].area=total;found=true;break;}}if(!found){var defP=S.lines.length>0&&S.lines[0].price?S.lines[0].price:650;S.lines.push({name:"Укладка пола",area:total,price:defP});}$("floorL").value="";$("floorW").value="";$("floorCalcRes").textContent="0";saveState();renderLines();renderFloorLog();}
+function renderWallLog(){var h="";var total=0;_wallParts.forEach(function(p,i){total+=p.a;h+='<span>'+p.h+'×'+p.w+'='+p.a+'</span>';if(i<_wallParts.length-1)h+=' + ';});if(_wallParts.length>0)h+=' = <strong style="color:var(--accent)">'+r1(total)+' м²</strong>';$("wallLog").innerHTML=h;}
+function renderFloorLog(){var h="";var total=0;_floorParts.forEach(function(p,i){total+=p.a;h+='<span>'+p.l+'×'+p.w+'='+p.a+'</span>';if(i<_floorParts.length-1)h+=' + ';});if(_floorParts.length>0)h+=' = <strong style="color:var(--accent)">'+r1(total)+' м²</strong>';$("floorLog").innerHTML=h;}
 function toggleCalcSection(){var el=$("calcSection"),a=$("calcArrow");if(el.style.display==="none"){el.style.display="block";a.textContent="\u25b2";}else{el.style.display="none";a.textContent="\u25bc";}}
 
 function detectTileFormat(){
@@ -2080,7 +2122,7 @@ window.addEventListener("popstate",function(e){
 })();
 
 // Back button: navigate steps instead of closing app
-S.lines=[];S._discount=0;S.works.forEach(function(w){w.enabled=false;if(w.type==="manual")w.qty=0;});saveState();renderLines();renderHistory();
+S.lines=[];S._discount=0;_wallParts=[];_floorParts=[];S.works.forEach(function(w){w.enabled=false;if(w.type==="manual")w.qty=0;});saveState();renderLines();renderHistory();
 document.addEventListener("keydown",function(e){if(e.keyCode===13&&e.target&&e.target.type==="number"){e.preventDefault();var inputs=Array.from(document.querySelectorAll('input[type=number]:not([style*="display:none"])'));var idx=inputs.indexOf(e.target);var next=null;for(var j=idx+1;j<inputs.length;j++){if(inputs[j].offsetParent!==null){next=inputs[j];break;}}if(next){next.focus();next.select();}else{e.target.blur();}}});
 </script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').then(function(r){r.update();});}</script>
