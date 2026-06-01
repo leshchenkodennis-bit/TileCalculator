@@ -186,8 +186,20 @@ h1{font-size:24px;font-weight:800}
 <div style="font-size:24px;font-weight:700;color:#fff" id="tMat"></div>
 </div></div>
 
-<!-- Refresh all button on results -->
-<!-- Results content -->
+<div id="discountBox" style="margin-bottom:14px;padding:14px 18px;background:var(--surf);border-radius:11px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span style="font-size:13px;color:var(--dim)">Скидка:</span>
+<div style="display:flex;align-items:center;gap:6px">
+<input id="discountInp" type="number" step="1" min="0" max="100" value="" placeholder="0" style="width:55px;font-size:15px;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text)" oninput="applyDiscount()" onkeydown="if(event.keyCode===13)this.blur()">
+<span style="font-size:13px;color:var(--dim)">%</span>
+</div>
+</div>
+<div id="discountResult" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--dim);margin-bottom:6px"><span>Сумма без скидки:</span><span id="discountOrig"></span></div>
+<div style="display:flex;justify-content:space-between;font-size:13px;color:#e74c3c;margin-bottom:6px"><span>Скидка:</span><span id="discountAmount"></span></div>
+<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:var(--accent)"><span>Итого:</span><span id="discountFinal"></span></div>
+</div>
+</div>
 
 <div class="sec"><div class="sec-h" style="background:var(--tc-bg);border:1px solid var(--tc-border);cursor:pointer;display:flex;align-items:center;padding:16px 18px" onclick="toggleSec('wRows',this)"><span class="sec-arrow" style="font-size:20px;color:var(--accent);margin-right:10px">▼</span><span style="flex:1;font-size:16px;font-weight:800">Работа</span><span style="color:var(--accent);font-weight:800;font-size:16px;margin-right:10px" id="whTotal"></span><div style="position:relative"><button onclick="event.stopPropagation();toggleExMenu('exMenuW',event)" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px 6px" title="Сохранить">💾</button><div id="exMenuW" class="ex-menu" style="display:none"><button onclick="exportPDF('works');closeExMenus()">📄 PDF работы</button><button onclick="exportPDF('all');closeExMenus()">📄 PDF полная</button><button onclick="exportCSV();closeExMenus()">📊 CSV</button><button onclick="shareTxt();closeExMenus()">📋 Копировать</button></div></div></div><div id="wRows" style="display:none"></div></div>
 <div class="sec"><div class="sec-h" style="background:var(--tc-bg);border:1px solid var(--tc-border);cursor:pointer;display:flex;align-items:center;padding:16px 18px" onclick="toggleSec('mWrap',this)"><span class="sec-arrow" style="font-size:20px;color:var(--ok);margin-right:10px">▼</span><span style="flex:1;font-size:16px;font-weight:800">Материалы</span><span style="color:var(--ok);font-weight:800;font-size:16px;margin-right:10px" id="mhTotal"></span><div style="position:relative"><button onclick="event.stopPropagation();toggleExMenu('exMenuM',event)" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px 6px" title="Сохранить">💾</button><div id="exMenuM" class="ex-menu" style="display:none"><button onclick="exportPDF('mats');closeExMenus()">📄 PDF материалы</button><button onclick="exportPDF('all');closeExMenus()">📄 PDF полная</button><button onclick="exportCSV();closeExMenus()">📊 CSV</button><button onclick="shareTxt();closeExMenus()">📋 Копировать</button></div></div></div><div id="mWrap" style="display:none"><div id="mRows"></div></div></div>
@@ -1225,9 +1237,16 @@ function tileInfoStr(){
   var layerR=r1(grebMm);
   return `гребёнка ${toothMm}мм → слой ~${layerR}мм`;
 }
+var _lastWt=0,_lastMt=0;
+function applyDiscount(){
+  var pct=parseFloat($("discountInp").value)||0;S._discount=pct;saveState();
+  var total=_lastWt+_lastMt;var res=$("discountResult");
+  if(pct>0&&total>0){var disc=Math.round(total*pct/100);res.style.display="block";$("discountOrig").textContent=fmt(total)+" грн";$("discountAmount").textContent="−"+fmt(disc)+" грн";$("discountFinal").textContent=fmt(total-disc)+" грн";}
+  else{res.style.display="none";}
+}
 function renderResult(){
   const wk=calcW(),{l,w}=gv();
-  var wl=[];initLines();var _la=getLinesArea();if(_la>0){S.lines.forEach(function(ln){if(ln.area>0)wl.push({n:ln.name||"Укладка",q:ln.area,u:"м²",p:ln.price||0,s:Math.round((ln.area||0)*(ln.price||0)),t:"",idx:-1});});}else{wl.push({n:TILE_WORK.name,q:wk,u:TILE_WORK.unit,p:TILE_WORK.price,s:Math.round(wk*TILE_WORK.price),t:"",idx:-1});}
+  var wl=[];initLines();var _la=getLinesArea();if(_la>0){S.lines.forEach(function(ln,_li){if(ln.area>0)wl.push({n:ln.name||"Укладка",q:ln.area,u:"м²",p:ln.price||0,s:Math.round((ln.area||0)*(ln.price||0)),t:"",idx:-1,lineIdx:_li});});}else{wl.push({n:TILE_WORK.name,q:wk,u:TILE_WORK.unit,p:TILE_WORK.price,s:Math.round(wk*TILE_WORK.price),t:"",idx:-1,lineIdx:-1});}
   S.works.forEach((w,i)=>{if(!w.enabled)return;const q=wQty(w,wk);if(q<=0&&w.type!=="fixed")return;wl.push({n:w.name,q,u:w.unit,p:w.price,s:Math.round(q*w.price),t:w.title||"",idx:i});});
   const wt=wl.reduce((a,x)=>a+x.s,0);
 
@@ -1241,7 +1260,7 @@ function renderResult(){
       </div>
       <div style="font-weight:800;font-size:15px;white-space:nowrap;margin-left:12px">${fmt(x.s)} грн</div>
       <button onclick="${x.idx>=0?'editWorkInline('+x.idx+')':'editTileWork()'}" style="background:none;border:none;cursor:pointer;font-size:13px;padding:4px 6px;color:var(--dim);margin-left:4px" title="Редактировать" title="Ред."><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
-      ${x.idx>=0?'<button onclick="removeWorkResult('+x.idx+')" style="background:none;border:none;cursor:pointer;font-size:13px;padding:4px 6px;color:var(--err)">✕</button>':''}
+      <button onclick="${x.idx>=0?'removeWorkResult('+x.idx+')':'removeLineResult('+(x.lineIdx||0)+')'}" style="background:none;border:none;cursor:pointer;font-size:13px;padding:4px 6px;color:var(--err)">✕</button>
     </div>`;
   });
   $("wRows").innerHTML=wh+'<div style="text-align:center;padding:8px"><button onclick="collapseParent(this)" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 16px;font-size:12px;color:var(--dim);cursor:pointer">▲ Свернуть</button></div>';$("whTotal").textContent=fmt(wt)+" грн";
@@ -1285,11 +1304,14 @@ function renderResult(){
   if(!ml.length)mh=`<div style="text-align:center;color:var(--dim);padding:20px">Нет активных материалов</div>`;
   mh+=`<button class="bt bt2" style="padding:10px;font-size:13px;margin-top:6px;width:100%;border-color:var(--ok);color:var(--ok)" onclick="addMatResult()">+ Добавить материал</button>`;
   $("mRows").innerHTML=mh+'<div style="text-align:center;padding:8px"><button onclick="collapseParent(this)" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 16px;font-size:12px;color:var(--dim);cursor:pointer">▲ Свернуть</button></div>';$("mhTotal").textContent=fmt(mt)+" грн";
-  $("tWork").textContent=fmt(wt)+" грн";$("tMat").textContent=fmt(mt)+" грн";
+  _lastWt=wt;_lastMt=mt;$("tWork").textContent=fmt(wt)+" грн";$("tMat").textContent=fmt(mt)+" грн";
+  if(S._discount>0)$("discountInp").value=S._discount;
+  applyDiscount();
 
   $("infoBar").textContent=`Площадь: ${wk} м² · ${l}×${w} м · H=${H} м`;
 }
 
+function removeLineResult(i){if(S.lines&&S.lines[i]){S.lines.splice(i,1);saveState();renderResult();}}
 function removeWorkResult(i){S.works[i].enabled=false;saveState();renderResult();}
 function removeMatResult(i){S.materials[i].enabled=false;S.materials[i].manualOn=false;saveState();renderResult();}
 function addMatResult(){
@@ -1319,7 +1341,7 @@ function editWorkInline(i){
   $("ieName").value=w.name;
   $("ieName").disabled=false;
   $("iePt").value=w.title||"";
-  $("iePtWrap").style.display="block";
+  $("iePtWrap").style.display="none";
   $("iePrice").value=w.price;
   $("ieQty").value=q;
   $("ieQty").disabled=false;
@@ -1410,7 +1432,7 @@ function editTileWork(){
   $("ieName").value=TILE_WORK.name;
   $("ieName").disabled=false;
   $("iePt").value="";
-  $("iePtWrap").style.display="block";
+  $("iePtWrap").style.display="none";
   $("iePrice").value=TILE_WORK.price;
   $("ieQty").value=calcW();
   $("ieQty").disabled=false;
