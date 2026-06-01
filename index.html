@@ -183,8 +183,17 @@ h1{font-size:24px;font-weight:800}
 <div style="font-size:40px;font-weight:800;color:var(--accent);position:relative;line-height:1.1" id="tWork"></div>
 <div style="margin-top:14px;position:relative">
 <div style="font-size:12px;color:var(--dim);margin-bottom:5px">СТОИМОСТЬ МАТЕРИАЛОВ</div>
-<div style="font-size:24px;font-weight:700;color:#fff" id="tMat"></div>
-</div></div>
+<div style="font-size:24px;font-weight:700;color:var(--text)" id="tMat"></div>
+</div>
+<div id="tcDiscount" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.15)">
+<div style="font-size:11px;color:var(--dim);margin-bottom:4px">СКИДКА НА РАБОТУ <span id="tcDiscPct"></span>%</div>
+<div style="font-size:18px;font-weight:700;color:#e74c3c" id="tcDiscAmt"></div>
+</div>
+<div style="margin-top:14px;padding-top:14px;border-top:2px solid rgba(255,255,255,0.2)">
+<div style="font-size:12px;color:var(--dim);margin-bottom:5px">ИТОГО ЗА РАБОТУ</div>
+<div style="font-size:36px;font-weight:800;color:var(--text)" id="tGrand"></div>
+</div>
+</div>
 
 <div id="discountBox" style="margin-bottom:14px;padding:14px 18px;background:var(--surf);border-radius:11px">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
@@ -195,9 +204,9 @@ h1{font-size:24px;font-weight:800}
 </div>
 </div>
 <div id="discountResult" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
-<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--dim);margin-bottom:6px"><span>Сумма без скидки:</span><span id="discountOrig"></span></div>
+<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--dim);margin-bottom:6px"><span>Работа без скидки:</span><span id="discountOrig"></span></div>
 <div style="display:flex;justify-content:space-between;font-size:13px;color:#e74c3c;margin-bottom:6px"><span>Скидка:</span><span id="discountAmount"></span></div>
-<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:var(--accent)"><span>Итого:</span><span id="discountFinal"></span></div>
+<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:var(--accent)"><span>Итого за работу:</span><span id="discountFinal"></span></div>
 </div>
 </div>
 
@@ -1240,9 +1249,24 @@ function tileInfoStr(){
 var _lastWt=0,_lastMt=0;
 function applyDiscount(){
   var pct=parseFloat($("discountInp").value)||0;S._discount=pct;saveState();
-  var total=_lastWt+_lastMt;var res=$("discountResult");
-  if(pct>0&&total>0){var disc=Math.round(total*pct/100);res.style.display="block";$("discountOrig").textContent=fmt(total)+" грн";$("discountAmount").textContent="−"+fmt(disc)+" грн";$("discountFinal").textContent=fmt(total-disc)+" грн";}
-  else{res.style.display="none";}
+  var total=_lastWt;var res=$("discountResult");var tcD=$("tcDiscount");
+  if(pct>0&&total>0){
+    var disc=Math.round(total*pct/100);var discWt=total-disc;
+    res.style.display="block";
+    $("discountOrig").textContent=fmt(total)+" грн";
+    $("discountAmount").textContent="−"+fmt(disc)+" грн";
+    $("discountFinal").textContent=fmt(discWt)+" грн";
+    if(tcD){tcD.style.display="block";$("tcDiscPct").textContent=pct;$("tcDiscAmt").textContent="−"+fmt(disc)+" грн";}
+    $("tWork").textContent=fmt(discWt)+" грн";
+    if($("whTotal"))$("whTotal").textContent=fmt(discWt)+" грн";
+    if($("tGrand"))$("tGrand").textContent=fmt(discWt)+" грн";
+  }else{
+    res.style.display="none";
+    if(tcD)tcD.style.display="none";
+    $("tWork").textContent=fmt(_lastWt)+" грн";
+    if($("whTotal"))$("whTotal").textContent=fmt(_lastWt)+" грн";
+    if($("tGrand"))$("tGrand").textContent=fmt(_lastWt)+" грн";
+  }
 }
 function renderResult(){
   const wk=calcW(),{l,w}=gv();
@@ -1503,9 +1527,12 @@ function buildEstimateText(){
   ml.forEach(x=>{txt+=`${x.name}: ${x.qty} ${x.unit} × ${x.price} грн = ${fmt(x.sum)} грн${x.hint||""}\n`;});
   const mt=ml.reduce((a,x)=>a+x.sum,0);
   txt+=`\nИтого материалы: ${fmt(mt)} грн\n`;
+  var _tdp=S._discount||0,_tdd=0;
+  if(_tdp>0){_tdd=Math.round(wt*_tdp/100);txt+=`\nСкидка ${_tdp}% на работу: -${fmt(_tdd)} грн\n`;}
+  var _twta=wt-_tdd;
   txt+=`\n${"═".repeat(35)}\n`;
-  txt+=`ОБЩАЯ СТОИМОСТЬ: ${fmt(wt+mt)} грн\n`;
-  txt+=`(работа: ${fmt(wt)} + материалы: ${fmt(mt)})\n`;
+  txt+=`СТОИМОСТЬ РАБОТ: ${fmt(_twta)} грн${_tdp>0?" (скидка "+_tdp+"%)":""}\n`;
+  if(mt>0)txt+=`МАТЕРИАЛЫ (отдельно): ${fmt(mt)} грн\n`;
   txt+=`${"═".repeat(35)}\n`;
   txt+=`\nДата: ${new Date().toLocaleDateString("uk-UA")}\n`;
   return txt;
@@ -1556,7 +1583,7 @@ td:nth-child(2){text-align:center;white-space:nowrap}td:nth-child(3){text-align:
     const workGroups={tile:"Облицовка",cut:"Подрезка",install:"Изделие",finish:"Финишные работы",fabrication:"Изготовление изделий"};
     const wGroupOrder=["tile","cut","fabrication","finish"];
     const wl=[];
-    wl.push({n:TILE_WORK.name,q:wk,u:TILE_WORK.unit,p:TILE_WORK.price,s:Math.round(wk*TILE_WORK.price),grp:"tile",hint:"",t:""});
+    var _pla=getLinesArea();if(_pla>0){S.lines.forEach(function(ln){if(ln.area>0)wl.push({n:ln.name||"Укладка",q:ln.area,u:"м²",p:ln.price||0,s:Math.round((ln.area||0)*(ln.price||0)),grp:"tile",hint:"",t:""});});}else{wl.push({n:TILE_WORK.name,q:wk,u:TILE_WORK.unit,p:TILE_WORK.price,s:Math.round(wk*TILE_WORK.price),grp:"tile",hint:"",t:""});}
     S.works.forEach(ww=>{if(!ww.enabled)return;const q=wQty(ww,wk);if(q<=0&&ww.type!=="fixed")return;
       var grp=ww.workGroup||BASE_WORKS.find(b=>b.id===ww.id)?.workGroup||"finish";
       wl.push({n:ww.name,q,u:ww.unit,p:ww.price,s:Math.round(q*ww.price),grp,hint:"",t:ww.title||""});
@@ -1619,9 +1646,16 @@ td:nth-child(2){text-align:center;white-space:nowrap}td:nth-child(3){text-align:
     mt=ml.reduce((a,x)=>a+x.sum,0);
     html+=`<tr class="total-row"><td colspan="3">Итого материалы</td><td>${fmt(mt)} грн</td></tr></table>`;
   }
-  const gt=mode==="works"?wt:mode==="mats"?mt:wt+mt;
-  html+=`<div class="grand">${mode==="works"?"СТОИМОСТЬ РАБОТ":mode==="mats"?"СТОИМОСТЬ МАТЕРИАЛОВ":"ОБЩАЯ СТОИМОСТЬ"}<br><b>${fmt(gt)} грн</b>`;
-  if(mode==="all")html+=`<br><span style="font-size:13px;color:#666">работа: ${fmt(wt)} + материалы: ${fmt(mt)}</span>`;
+  var _dpct=S._discount||0;var _ddisc=0;
+  if(_dpct>0)_ddisc=Math.round(wt*_dpct/100);
+  var wtAfter=wt-_ddisc;
+  const gt=mode==="works"?wtAfter:mode==="mats"?mt:wtAfter;
+  if(_dpct>0&&(mode==="all"||mode==="works")){
+    html+=`<div style="padding:10px 20px;background:#fff5f5;border:1px solid #fca5a5;border-radius:8px;margin:10px 0;display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;color:#666">Скидка ${_dpct}% на работу</span><span style="font-size:16px;font-weight:700;color:#e74c3c">−${fmt(_ddisc)} грн</span></div>`;
+  }
+  html+=`<div class="grand">${mode==="works"?"СТОИМОСТЬ РАБОТ":mode==="mats"?"СТОИМОСТЬ МАТЕРИАЛОВ":"СТОИМОСТЬ РАБОТ"}<br><b>${fmt(gt)} грн</b>`;
+  if(mode==="all"&&mt>0)html+=`<br><span style="font-size:13px;color:#666">${_dpct>0?"со скидкой "+_dpct+"%":""}</span>`;
+  if(mode==="all"&&mt>0)html+=`<div style="text-align:center;margin-top:10px;font-size:14px;color:#666">Материалы (отдельно): <b>${fmt(mt)} грн</b></div>`;
   html+=`</div><div class="footer"><span>Смета № ${estNum} · ${dateStr}</span><span>Powered by Tiler's Assistant by pro.tiler.od</span></div></body></html>`;
 
   const sfx=mode==="works"?"_raboty":mode==="mats"?"_materialy":"";
@@ -2046,7 +2080,7 @@ window.addEventListener("popstate",function(e){
 })();
 
 // Back button: navigate steps instead of closing app
-S.lines=[];saveState();renderLines();renderHistory();
+S.lines=[];S._discount=0;S.works.forEach(function(w){w.enabled=false;if(w.type==="manual")w.qty=0;});saveState();renderLines();renderHistory();
 document.addEventListener("keydown",function(e){if(e.keyCode===13&&e.target&&e.target.type==="number"){e.preventDefault();var inputs=Array.from(document.querySelectorAll('input[type=number]:not([style*="display:none"])'));var idx=inputs.indexOf(e.target);var next=null;for(var j=idx+1;j<inputs.length;j++){if(inputs[j].offsetParent!==null){next=inputs[j];break;}}if(next){next.focus();next.select();}else{e.target.blur();}}});
 </script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').then(function(r){r.update();});}</script>
