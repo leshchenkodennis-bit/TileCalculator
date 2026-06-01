@@ -113,9 +113,12 @@ h1{font-size:24px;font-weight:800}
 <div style="position:absolute;top:12px;right:12px;display:flex;gap:8px"><button onclick="S._mode='matOnly';saveState();goMatOnly()" style="background:var(--surf);border:1px solid var(--border);border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px" title="Смета на материалы">📦</button><button onclick="openSettings()" style="background:var(--surf);border:1px solid var(--border);border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px" title="Персонализация">⚙️</button></div>
 <div id="linesSection" style="margin-bottom:18px">
 <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:10px;text-align:center">Как будем считать?</div>
+<div id="linesSummary" style="display:none;margin-bottom:8px"></div>
+<button onclick="toggleConstructor()" style="background:#fff;border:2px solid var(--accent);border-radius:12px;padding:10px 22px;font-size:16px;font-weight:700;color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;box-shadow:0 2px 8px rgba(74,123,212,0.1)"><span style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">🧱</span> Конструктор сметы</span><span id="constructorArrow" style="font-size:10px;color:var(--dim)">▼</span></button>
+<div id="constructorSection" style="display:none;margin-top:10px;padding:12px;background:var(--surf);border-radius:10px;border:1px solid var(--border)">
 <div id="linesContainer"></div>
-<button onclick="addLine()" style="margin-top:8px;background:none;border:1px dashed var(--accent);border-radius:8px;padding:6px 14px;font-size:15px;font-weight:600;color:var(--accent);cursor:pointer;display:block;margin-left:auto;margin-right:auto">+ Конструктор сметы</button>
-
+<button onclick="addLine()" style="margin-top:8px;background:none;border:1px dashed var(--accent);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;width:100%">+ Добавить позицию</button>
+</div>
 </div>
 <div style="margin-bottom:18px">
 <button onclick="toggleCalcSection()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--dim);cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between"><span>🧮 Калькулятор площади</span><span id="calcArrow" style="font-size:10px">▼</span></button>
@@ -143,7 +146,7 @@ h1{font-size:24px;font-weight:800}
 </div>
 
 <div style="margin-bottom:12px">
-<button onclick="toggleWallCalc()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--dim);cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between"><span>📐 Калькулятор стен</span><span id="wallCalcArrow" style="font-size:10px">▼</span></button>
+<button onclick="toggleWallCalc()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--dim);cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between"><span>🧱 Калькулятор стен</span><span id="wallCalcArrow" style="font-size:10px">▼</span></button>
 </div>
 <div id="wallCalcSection" style="display:none;margin-bottom:14px">
 <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
@@ -159,7 +162,7 @@ h1{font-size:24px;font-weight:800}
 </div>
 
 <div style="margin-bottom:12px">
-<button onclick="toggleFloorCalc()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--dim);cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between"><span>📐 Калькулятор полов</span><span id="floorCalcArrow" style="font-size:10px">▼</span></button>
+<button onclick="toggleFloorCalc()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--dim);cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between"><span>🔲 Калькулятор полов</span><span id="floorCalcArrow" style="font-size:10px">▼</span></button>
 </div>
 <div id="floorCalcSection" style="display:none;margin-bottom:14px">
 <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
@@ -407,12 +410,14 @@ function removeLine(i){var removed=S.lines[i];if(removed){if(removed.name==="У�
 function showFormatPicker(lineIdx){var existing=$("fmtPicker");if(existing)existing.remove();var fmts=getFormats();var h='<div id="fmtPicker" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:999;display:flex;align-items:center;justify-content:center" onclick="this.remove()"><div style="background:var(--card);border-radius:12px;padding:16px;min-width:200px;max-width:280px" onclick="event.stopPropagation()"><div style="font-weight:700;font-size:14px;margin-bottom:12px">Формат плитки</div>';fmts.forEach(function(f){h+='<button onclick="pickFormat('+lineIdx+','+f.price+')" style="display:flex;justify-content:space-between;width:100%;background:none;border:none;border-bottom:1px solid var(--border);padding:10px 4px;cursor:pointer;font-size:13px;color:var(--text)"><span>'+esc(f.name)+'</span><strong style="color:var(--accent)">'+f.price+' грн/м²</strong></button>';});h+='<button onclick="this.closest(\'#fmtPicker\').remove()" style="margin-top:10px;width:100%;background:none;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:13px;color:var(--dim);cursor:pointer">Отмена</button></div></div>';document.body.insertAdjacentHTML("beforeend",h);}
 function pickFormat(lineIdx,price){initLines();if(S.lines[lineIdx]){S.lines[lineIdx].price=price;}var el=$("fmtPicker");if(el)el.remove();saveState();renderLines();}
 function updLine(i,f,v){initLines();S.lines[i][f]=v;saveState();var ln=S.lines[i];var el=$("lineSum"+i);if(el)el.textContent=fmt(Math.round((ln.area||0)*(ln.price||0)));updLineTotals();}
-function updLineTotals(){initLines();var ta=0,ts=0;S.lines.forEach(function(ln){ta+=ln.area||0;ts+=Math.round((ln.area||0)*(ln.price||0));});
+function updLineTotals(){initLines();var ta=0,ts=0;S.lines.forEach(function(ln){ta+=ln.area||0;ts+=Math.round((ln.area||0)*(ln.price||0));});updateLinesSummary();
 }
 function getLinesArea(){initLines();var t=0;S.lines.forEach(function(ln){t+=ln.area||0;});return r1(t);}
 function getLinesTotalCost(){initLines();var t=0;S.lines.forEach(function(ln){t+=Math.round((ln.area||0)*(ln.price||0));});return t;}
 function updCalcResult(){var l=parseFloat($("iL").value)||0,w=parseFloat($("iW").value)||0;var fl=Math.round(l*w*100)/100;var wa=Math.round(((l+w)*2*H-DA)*100)/100;if(wa<0)wa=0;var box=$("calcResult");if(fl>0){box.style.display="block";$("calcFloor").textContent=fl;$("calcWalls").textContent=r1(wa);$("calcTotal").textContent=r1(fl+wa);}else{box.style.display="none";}}
 function applyCalcToLine(){var l=parseFloat($("iL").value)||0,w=parseFloat($("iW").value)||0;var fl=Math.round(l*w*100)/100;var wa=Math.round(((l+w)*2*H-DA)*100)/100;if(wa<0)wa=0;if(fl<=0)return;initLines();var defP=S.lines.length>0&&S.lines[0].price?S.lines[0].price:650;S.lines=[];if(fl>0)S.lines.push({name:"Укладка пола",area:fl,price:defP});if(wa>0)S.lines.push({name:"Укладка стен",area:wa,price:defP});$("iL").value="";$("iW").value="";$("calcResult").style.display="none";saveState();renderLines();toggleCalcSection();}
+function toggleConstructor(){var el=$("constructorSection"),a=$("constructorArrow");if(el.style.display==="none"){el.style.display="block";a.textContent="\u25b2";}else{el.style.display="none";a.textContent="\u25bc";}updateLinesSummary();}
+function updateLinesSummary(){var s=$("linesSummary");if(!s)return;initLines();if(S.lines.length===0){s.style.display="none";return;}var ta=0,ts=0;S.lines.forEach(function(ln){ta+=ln.area||0;ts+=Math.round((ln.area||0)*(ln.price||0));});s.style.display="block";s.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:var(--glow);border-radius:8px;border:1px solid var(--border)"><span style="font-size:13px;color:var(--dim)">'+S.lines.length+' поз. · <strong style="color:var(--accent)">'+r1(ta)+' м²</strong></span><strong style="font-size:15px;color:var(--accent)">'+fmt(ts)+' грн</strong></div>';}
 var _wallParts=[],_floorParts=[];
 function toggleWallCalc(){var el=$("wallCalcSection"),a=$("wallCalcArrow");if(el.style.display==="none"){el.style.display="block";a.textContent="\u25b2";}else{el.style.display="none";a.textContent="\u25bc";}}
 function toggleFloorCalc(){var el=$("floorCalcSection"),a=$("floorCalcArrow");if(el.style.display==="none"){el.style.display="block";a.textContent="\u25b2";}else{el.style.display="none";a.textContent="\u25bc";}}
