@@ -394,14 +394,19 @@ function getFormats(){return S._formats&&S._formats.length>0?S._formats:DEF_FORM
 function initLines(){if(!S.lines)S.lines=[];}
 function renderLines(){initLines();var h="";S.lines.forEach(function(ln,i){
 var s=Math.round((ln.area||0)*(ln.price||0));
-h+='<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap">';
-h+='<input class="inp-s" type="text" value="'+esc(ln.name||"")+'" placeholder="Название" style="flex:2;min-width:100px;font-size:13px" oninput="updLine('+i+',\'name\',this.value)">';
-h+='<input class="inp-s" type="number" step="0.1" value="'+(ln.area||"")+'" placeholder="м²" style="width:60px;font-size:13px;text-align:center" oninput="updLine('+i+',\'area\',parseFloat(this.value)||0)" onkeydown="if(event.keyCode===13)this.blur()">';
-h+='<span style="font-size:11px;color:var(--dim)">×</span>';
-h+='<input class="inp-s" type="number" step="1" value="'+(ln.price||"")+'" placeholder="грн" style="width:55px;font-size:13px;text-align:center" oninput="updLine('+i+',\'price\',parseFloat(this.value)||0)" onkeydown="if(event.keyCode===13)this.blur()">'+'<button onclick="showFormatPicker('+i+')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;color:var(--accent);cursor:pointer;line-height:1">▼</button>';
-h+='<span style="font-size:11px;color:var(--dim)">=</span>';
-h+='<span id="lineSum'+i+'" style="font-size:13px;font-weight:600;color:var(--accent);min-width:55px;text-align:right">'+fmt(s)+'</span>';
+h+='<div style="margin-bottom:10px;padding:8px;background:#fff;border-radius:8px;border:1px solid var(--border)">';
+h+='<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">';
+h+='<input class="inp-s" type="text" value="'+esc(ln.name||"")+'" placeholder="Название" style="flex:1;font-size:13px" oninput="updLine('+i+',\'name\',this.value)">';
 h+='<button onclick="removeLine('+i+')" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--dim);padding:2px 4px">✕</button>';
+h+='</div>';
+h+='<div style="display:flex;gap:6px;align-items:center">';
+h+='<input class="inp-s" type="number" step="0.1" value="'+(ln.area||"")+'" placeholder="м²" style="width:55px;font-size:13px;text-align:center" oninput="updLine('+i+',\'area\',parseFloat(this.value)||0)" onkeydown="if(event.keyCode===13)this.blur()">';
+h+='<span style="font-size:11px;color:var(--dim)">×</span>';
+h+='<input class="inp-s" type="number" step="1" value="'+(ln.price||"")+'" placeholder="грн" style="width:50px;font-size:13px;text-align:center" oninput="updLine('+i+',\'price\',parseFloat(this.value)||0)" onkeydown="if(event.keyCode===13)this.blur()">';
+h+='<button onclick="showFormatPicker('+i+')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 5px;font-size:11px;color:var(--accent);cursor:pointer;line-height:1">▼</button>';
+h+='<span style="font-size:11px;color:var(--dim)">=</span>';
+h+='<span id="lineSum'+i+'" style="font-size:14px;font-weight:700;color:var(--accent);flex:1;text-align:right">'+fmt(s)+' грн</span>';
+h+='</div>';
 h+='</div>';});
 $("linesContainer").innerHTML=h;
 updLineTotals();}
