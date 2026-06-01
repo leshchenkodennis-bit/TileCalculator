@@ -401,8 +401,8 @@ h+='<span style="font-size:12px;color:var(--dim)">×</span>';
 h+='<input class="inp-s" type="number" step="1" value="'+(ln.price||"")+'" placeholder="грн" style="width:52px;font-size:14px;text-align:center;padding:6px 4px" oninput="updLine('+i+',\'price\',parseFloat(this.value)||0)" onkeydown="if(event.keyCode===13)this.blur()">';
 h+='<button onclick="showFormatPicker('+i+')" style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:2px 4px;font-size:10px;color:var(--accent);cursor:pointer;line-height:1">▼</button>';
 h+='<span style="font-size:12px;color:var(--dim)">=</span>';
-h+='<span id="lineSum'+i+'" style="font-size:14px;font-weight:700;color:var(--accent);white-space:nowrap">'+fmt(s)+'</span>';
-h+='<button onclick="removeLine('+i+')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--dim);padding:1px 3px">✕</button>';
+h+='<span id="lineSum'+i+'" style="font-size:14px;font-weight:700;color:var(--accent);white-space:nowrap;flex:1">'+fmt(s)+'</span>';
+h+='<button onclick="removeLine('+i+')" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--dim);padding:2px 0;margin-left:auto">✕</button>';
 h+='</div>';});
 $("linesContainer").innerHTML=h;
 updLineTotals();}
